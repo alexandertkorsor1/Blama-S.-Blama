@@ -1,84 +1,63 @@
-import { Link } from 'react-router-dom';
-import { Image as ImageIcon, ArrowLeft, Clock, ShieldCheck } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Edit3, Image as ImageIcon, ImageOff, Plus, RefreshCw, Save, Trash2, X } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/types/database.types';
+
+type GalleryImage = Database['public']['Tables']['gallery_images']['Row'];
+type GalleryForm = { image_url: string; alt: string; category: string; storage_path: string; display_order: string; published: boolean };
+const blankForm: GalleryForm = { image_url: '', alt: '', category: '', storage_path: '', display_order: '0', published: true };
+const isUsableImageUrl = (value: string) => value.startsWith('/') || /^https?:\/\//i.test(value);
 
 export default function AdminGalleryPage() {
-  return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn">
-      <div>
-        <Link
-          to="/admin"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-navy-600 hover:text-gold-600 transition-colors"
-        >
-          <ArrowLeft size={14} />
-          <span>Back to Command Dashboard</span>
-        </Link>
-      </div>
+  const [records, setRecords] = useState<GalleryImage[]>([]);
+  const [form, setForm] = useState<GalleryForm>(blankForm);
+  const [editing, setEditing] = useState<GalleryImage | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
 
-      <div className="card p-8 sm:p-10 border border-navy-200 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-navy-100">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-500/10 text-gold-600 border border-gold-500/20 shadow-xs">
-              <ImageIcon size={28} />
-            </div>
-            <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-100 px-3 py-0.5 text-xs font-semibold text-navy-800">
-                <Clock size={12} />
-                Scheduled for Phase 10
-              </span>
-              <h1 className="font-serif text-2xl font-bold text-navy-950 mt-1">
-                Media Gallery Management
-              </h1>
-            </div>
-          </div>
+  const loadRecords = useCallback(async () => {
+    setIsLoading(true); setMessage(null);
+    try { const { data, error } = await supabase.from('gallery_images').select('*').order('display_order', { ascending: true }).order('created_at', { ascending: false }); if (error) { console.error('[Gallery] Load failed:', error); setMessage({ kind: 'error', text: 'Unable to load gallery images. Please try again.' }); return; } setRecords(data ?? []); setFailedImages(new Set()); }
+    catch (error) { console.error('[Gallery] Unexpected load failure:', error); setMessage({ kind: 'error', text: 'Unable to load gallery images. Please try again.' }); }
+    finally { setIsLoading(false); }
+  }, []);
+  useEffect(() => { void loadRecords(); }, [loadRecords]);
 
-          <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-            <ShieldCheck size={14} />
-            <span>Storage Bucket Ready</span>
-          </div>
-        </div>
+  const setField = <K extends keyof GalleryForm>(field: K, value: GalleryForm[K]) => setForm((current) => ({ ...current, [field]: value }));
+  const openCreate = () => { setEditing(null); setForm({ ...blankForm, display_order: String(records.length) }); setMessage(null); setIsFormOpen(true); };
+  const openEdit = (image: GalleryImage) => { setEditing(image); setForm({ image_url: image.image_url, alt: image.alt, category: image.category, storage_path: image.storage_path ?? '', display_order: String(image.display_order), published: image.published }); setMessage(null); setIsFormOpen(true); };
+  const closeForm = () => { if (!isSaving) { setEditing(null); setForm(blankForm); setIsFormOpen(false); } };
 
-        <div className="py-8 space-y-4">
-          <p className="text-sm text-navy-700 leading-relaxed">
-            This module provides full digital asset curation and portfolio media management:
-          </p>
+  const saveImage = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); if (isSaving) return;
+    if (!form.image_url.trim() || !form.alt.trim() || !form.category.trim()) { setMessage({ kind: 'error', text: 'Image URL, alternative text, and category are required.' }); return; }
+    setIsSaving(true); setMessage(null);
+    const payload = { image_url: form.image_url.trim(), alt: form.alt.trim(), category: form.category.trim(), storage_path: form.storage_path.trim() || null, display_order: Number.isFinite(Number(form.display_order)) ? Number(form.display_order) : 0, published: form.published };
+    try {
+      if (editing) { const { data, error } = await supabase.from('gallery_images').update(payload).eq('id', editing.id).select('*').single(); if (error || !data) { console.error('[Gallery] Update failed:', error); setMessage({ kind: 'error', text: 'Unable to save this gallery image. Please try again.' }); return; } setRecords((current) => current.map((item) => item.id === data.id ? data : item).sort((a, b) => a.display_order - b.display_order)); }
+      else { const { data, error } = await supabase.from('gallery_images').insert(payload).select('*').single(); if (error || !data) { console.error('[Gallery] Create failed:', error); setMessage({ kind: 'error', text: 'Unable to save this gallery image. Please try again.' }); return; } setRecords((current) => [...current, data].sort((a, b) => a.display_order - b.display_order)); }
+      closeForm(); setMessage({ kind: 'success', text: 'Gallery image saved successfully.' });
+    } catch (error) { console.error('[Gallery] Unexpected save failure:', error); setMessage({ kind: 'error', text: 'Unable to save this gallery image. Please try again.' }); }
+    finally { setIsSaving(false); }
+  };
 
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-navy-600">
-            <li className="flex items-center gap-2 p-3 rounded-xl bg-navy-50/60 border border-navy-100">
-              <span className="h-1.5 w-1.5 rounded-full bg-gold-500" />
-              <span>Multi-File Direct Upload to Supabase Storage</span>
-            </li>
-            <li className="flex items-center gap-2 p-3 rounded-xl bg-navy-50/60 border border-navy-100">
-              <span className="h-1.5 w-1.5 rounded-full bg-gold-500" />
-              <span>Image Titles, Captions, and Contextual Descriptions</span>
-            </li>
-            <li className="flex items-center gap-2 p-3 rounded-xl bg-navy-50/60 border border-navy-100">
-              <span className="h-1.5 w-1.5 rounded-full bg-gold-500" />
-              <span>Category Filtering (Events, Leadership, Fieldwork, Academics)</span>
-            </li>
-            <li className="flex items-center gap-2 p-3 rounded-xl bg-navy-50/60 border border-navy-100">
-              <span className="h-1.5 w-1.5 rounded-full bg-gold-500" />
-              <span>Date Taken & Location Metadata</span>
-            </li>
-            <li className="flex items-center gap-2 p-3 rounded-xl bg-navy-50/60 border border-navy-100">
-              <span className="h-1.5 w-1.5 rounded-full bg-gold-500" />
-              <span>Featured Spotlight Image Toggles</span>
-            </li>
-            <li className="flex items-center gap-2 p-3 rounded-xl bg-navy-50/60 border border-navy-100">
-              <span className="h-1.5 w-1.5 rounded-full bg-gold-500" />
-              <span>Display Sort Order Management</span>
-            </li>
-          </ul>
-        </div>
+  const deleteImage = async (image: GalleryImage) => {
+    if (deletingId || !window.confirm('Delete the gallery image “' + image.alt + '”? This action cannot be undone.')) return;
+    setDeletingId(image.id); setMessage(null);
+    try { const { error } = await supabase.from('gallery_images').delete().eq('id', image.id); if (error) { console.error('[Gallery] Delete failed:', error); setMessage({ kind: 'error', text: 'Unable to delete this gallery image. Please try again.' }); return; } setRecords((current) => current.filter((item) => item.id !== image.id)); setMessage({ kind: 'success', text: 'Gallery image deleted successfully.' }); }
+    catch (error) { console.error('[Gallery] Unexpected delete failure:', error); setMessage({ kind: 'error', text: 'Unable to delete this gallery image. Please try again.' }); }
+    finally { setDeletingId(null); }
+  };
 
-        <div className="pt-6 border-t border-navy-100 flex items-center justify-between">
-          <p className="text-xs text-navy-500 italic">
-            Full media storage uploading and gallery CRUD will be activated in Phase 10.
-          </p>
-          <Link to="/admin" className="btn-secondary !py-2 !px-4 !text-xs">
-            Return to Dashboard
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
+  return <div className="mx-auto max-w-6xl space-y-6 animate-fadeIn">
+    <section className="rounded-3xl border border-navy-800 bg-gradient-to-br from-navy-950 via-navy-900 to-navy-800 p-7 text-white shadow-xl sm:p-9"><div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-gold-500/30 bg-gold-500/10 text-gold-300"><ImageIcon size={22} /></div><h1 className="font-serif text-3xl font-bold">Gallery & Media</h1><p className="mt-2 max-w-2xl text-sm leading-relaxed text-navy-200">Curate the visual archive displayed across the Blama S. Blama professional portfolio.</p></div><div className="flex flex-wrap gap-3"><button type="button" onClick={() => void loadRecords()} disabled={isLoading} className="inline-flex items-center gap-2 rounded-xl border border-navy-600 bg-navy-950/40 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"><RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} /> Refresh</button><button type="button" onClick={openCreate} className="inline-flex items-center gap-2 rounded-xl bg-gold-500 px-4 py-2.5 text-sm font-bold text-navy-950 hover:bg-gold-400"><Plus size={17} /> Add Image</button></div></div></section>
+    {message && <div role={message.kind === 'error' ? 'alert' : 'status'} className={'rounded-2xl border p-4 text-sm ' + (message.kind === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800')}>{message.text}</div>}
+    {isFormOpen && <section className="rounded-3xl border border-navy-200 bg-white p-5 shadow-sm sm:p-7"><div className="flex items-start justify-between gap-4 border-b border-navy-100 pb-5"><div><h2 className="font-serif text-2xl font-bold text-navy-950">{editing ? 'Edit Gallery Image' : 'Add Gallery Image'}</h2><p className="mt-1 text-sm text-navy-600">Add an image URL and the metadata used to present it professionally.</p></div><button type="button" onClick={closeForm} disabled={isSaving} aria-label="Close image form" className="rounded-lg p-2 text-navy-500 hover:bg-navy-50"><X size={20} /></button></div><form onSubmit={saveImage} className="mt-6 space-y-6"><div className="grid grid-cols-1 gap-4 md:grid-cols-2"><Field label="Image URL" required type="url" value={form.image_url} onChange={(value) => setField('image_url', value)} placeholder="https://… or /gallery/image.jpg" /><Field label="Alternative Text" required value={form.alt} onChange={(value) => setField('alt', value)} placeholder="A concise description of the image" /><Field label="Category" required value={form.category} onChange={(value) => setField('category', value)} placeholder="Education, Events, Professional…" /><Field label="Storage Path" value={form.storage_path} onChange={(value) => setField('storage_path', value)} placeholder="Optional Supabase Storage path" /><Field label="Display Order" type="number" value={form.display_order} onChange={(value) => setField('display_order', value)} placeholder="0" /></div><label className="inline-flex items-center gap-3 rounded-xl bg-cream-50 px-4 py-3 text-sm font-semibold text-navy-800"><input type="checkbox" checked={form.published} onChange={(event) => setField('published', event.target.checked)} className="h-4 w-4 rounded border-navy-300 text-gold-600 focus:ring-gold-500" /> Display image publicly</label><div className="flex flex-col-reverse gap-3 border-t border-navy-100 pt-5 sm:flex-row sm:justify-end"><button type="button" onClick={closeForm} disabled={isSaving} className="rounded-xl border border-navy-300 px-4 py-2.5 text-sm font-semibold text-navy-700">Cancel</button><button type="submit" disabled={isSaving} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gold-500 px-5 py-2.5 text-sm font-bold text-navy-950 disabled:opacity-60"><Save size={16} />{isSaving ? 'Saving…' : 'Save Image'}</button></div></form></section>}
+    <section>{isLoading ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{[0, 1, 2].map((item) => <div key={item} className="h-72 animate-pulse rounded-3xl bg-white" />)}</div> : records.length === 0 ? <div className="rounded-3xl border border-dashed border-navy-300 bg-white p-10 text-center"><ImageIcon size={32} className="mx-auto text-gold-600" /><h2 className="mt-4 font-serif text-xl font-bold text-navy-950">No gallery images yet</h2><p className="mt-2 text-sm text-navy-600">Add the first visual asset to begin curating the portfolio gallery.</p><button type="button" onClick={openCreate} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gold-500 px-4 py-2.5 text-sm font-bold text-navy-950"><Plus size={16} /> Add Image</button></div> : <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{records.map((image) => { const showPreview = isUsableImageUrl(image.image_url) && !failedImages.has(image.id); return <article key={image.id} className="overflow-hidden rounded-3xl border border-navy-200 bg-white shadow-sm"><div className="relative aspect-[4/3] bg-navy-100">{showPreview ? <img src={image.image_url} alt={image.alt} onError={() => setFailedImages((current) => new Set(current).add(image.id))} className="h-full w-full object-cover" /> : <div className="flex h-full flex-col items-center justify-center gap-2 text-navy-500"><ImageOff size={28} /><span className="text-xs font-medium">Preview unavailable</span></div>}<span className={'absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm ' + (image.published ? 'bg-emerald-50 text-emerald-700' : 'bg-navy-900/90 text-white')}>{image.published ? 'Published' : 'Draft'}</span></div><div className="p-5"><p className="text-xs font-bold uppercase tracking-widest text-gold-700">{image.category}</p><p className="mt-2 line-clamp-2 text-sm font-semibold text-navy-900">{image.alt}</p><p className="mt-2 text-xs text-navy-500">Display order: {image.display_order}</p><div className="mt-5 flex gap-3"><button type="button" onClick={() => openEdit(image)} className="inline-flex items-center gap-1.5 rounded-lg border border-navy-300 px-3 py-2 text-xs font-semibold text-navy-800"><Edit3 size={14} /> Edit</button><button type="button" onClick={() => void deleteImage(image)} disabled={deletingId !== null} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-60">{deletingId === image.id ? <RefreshCw size={14} className="animate-spin" /> : <Trash2 size={14} />} Delete</button></div></div></article>; })}</div>}</section>
+  </div>;
 }
+function Field({ label, required, type = 'text', value, onChange, placeholder }: { label: string; required?: boolean; type?: string; value: string; onChange: (value: string) => void; placeholder: string }) { return <label className="block text-sm font-semibold text-navy-800">{label}{required && <span className="ml-1 text-gold-700">*</span>}<input required={required} type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="mt-2 w-full rounded-xl border border-navy-200 px-3.5 py-2.5 text-sm font-normal outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20" /></label>; }
