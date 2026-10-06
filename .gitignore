@@ -1,0 +1,47 @@
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.env
+
+# Local AI tooling
+.bolt/
+
+# Local/reference files
+2.html
+2_files/
+
+# Local source/reference images
+1.jpeg
+2.jpeg
+3.jpeg
+4.jpeg
+5.jpeg
+6.jpeg
+7.jpeg
+8.jpeg
+9.jpeg
+10.jpeg
+11.jpeg
+Blama pic.jpg
+
+# Supabase local CLI state
+supabase/.temp/

@@ -1,0 +1,127 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-cream-100 text-navy-900 font-sans antialiased;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4 {
+    line-height: 1.2;
+  }
+
+  ::selection {
+    @apply bg-gold-200 text-navy-900;
+  }
+
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-gold-500;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-md bg-gold-600 px-6 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-gold-700 hover:shadow-lg hover:shadow-gold-600/20;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-md border border-navy-300 px-6 py-3 text-sm font-semibold text-navy-800 transition-all duration-300 hover:border-navy-900 hover:bg-navy-900 hover:text-white;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 text-sm font-semibold text-navy-700 transition-colors hover:text-gold-600;
+  }
+
+  .section-padding {
+    @apply px-5 sm:px-8 lg:px-12;
+  }
+
+  .card {
+    @apply rounded-xl border border-navy-100 bg-white shadow-sm transition-all duration-300;
+  }
+
+  .card-hover:hover {
+    @apply shadow-xl shadow-navy-900/5 -translate-y-1;
+  }
+
+  .nav-link {
+    @apply relative text-sm font-medium text-navy-600 transition-colors duration-200 hover:text-navy-900;
+  }
+
+  .nav-link::after {
+    content: '';
+    @apply absolute -bottom-1 left-0 h-px w-0 bg-gold-500 transition-all duration-300;
+  }
+
+  .nav-link:hover::after,
+  .nav-link.is-active::after {
+    @apply w-full;
+  }
+
+  .nav-link.is-active {
+    @apply text-navy-900;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes scaleUp {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.25s ease-out forwards;
+  }
+
+  .animate-scaleUp {
+    animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
