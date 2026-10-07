@@ -22,5 +22,5 @@ export const profile: Profile = {
   location: 'Monrovia, Republic of Liberia',
   statement:
     'A Liberian professional grounded in business management and driven by a commitment to public service, leadership, and the rule of law. My journey bridges organizational excellence with a deepening pursuit of legal research and equal justice — building toward a future where governance and enterprise serve all citizens equitably.',
-  photo: '/profile.jpg', // Place your image in public/profile.jpg or use an external URL
+  photo: `${import.meta.env.BASE_URL}profile.jpg`, // Place your image in public/profile.jpg or use an external URL
 };
