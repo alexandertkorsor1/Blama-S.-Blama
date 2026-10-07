@@ -1,13 +1,54 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Award, Briefcase, CheckCircle2, FileText, GraduationCap, History, Image as ImageIcon, Layers, Mail, RefreshCw, Settings, Sparkles, UserCheck } from 'lucide-react';
+import { Award, BookOpen, Briefcase, CheckCircle2, FileText, GraduationCap, History, Image as ImageIcon, Landmark, Layers, Mail, RefreshCw, Settings, ShieldCheck, Sparkles, UserCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { certificates as initialCertificates } from '@/data/certificates';
+import { initialHubDocuments } from '@/data/documents';
 
-type DashboardStats = { education: number; experiences: number; achievements: number; skills: number; articles: number; galleryImages: number; timelineItems: number; unreadMessages: number };
-const emptyStats: DashboardStats = { education: 0, experiences: 0, achievements: 0, skills: 0, articles: 0, galleryImages: 0, timelineItems: 0, unreadMessages: 0 };
+const CERT_STORAGE_KEY = 'blama_portfolio_certificates_vault_v1';
+const DOCS_STORAGE_KEY = 'blama_portfolio_document_hub_v1';
+
+type DashboardStats = {
+  education: number;
+  experiences: number;
+  achievements: number;
+  skills: number;
+  articles: number;
+  galleryImages: number;
+  timelineItems: number;
+  unreadMessages: number;
+  certificates: number;
+  documents: number;
+};
+
+const emptyStats: DashboardStats = {
+  education: 0,
+  experiences: 0,
+  achievements: 0,
+  skills: 0,
+  articles: 0,
+  galleryImages: 0,
+  timelineItems: 0,
+  unreadMessages: 0,
+  certificates: initialCertificates.length,
+  documents: initialHubDocuments.length,
+};
+
 const actions = [
-  ['Profile', '/admin/profile', UserCheck], ['Education', '/admin/education', GraduationCap], ['Experience', '/admin/experience', Briefcase], ['Achievements', '/admin/achievements', Award], ['Skills', '/admin/skills', Layers], ['Articles', '/admin/articles', FileText], ['Gallery', '/admin/gallery', ImageIcon], ['Timeline', '/admin/timeline', History], ['Messages', '/admin/messages', Mail], ['Settings', '/admin/settings', Settings],
+  ['Profile', '/admin/profile', UserCheck],
+  ['Education', '/admin/education', GraduationCap],
+  ['Experience', '/admin/experience', Briefcase],
+  ['Achievements', '/admin/achievements', Award],
+  ['Skills', '/admin/skills', Layers],
+  ['Leadership & PYPP', '/admin/leadership', Landmark],
+  ['Articles', '/admin/articles', FileText],
+  ['Certificates', '/admin/certificates', ShieldCheck],
+  ['Document Hub', '/admin/documents', BookOpen],
+  ['Gallery', '/admin/gallery', ImageIcon],
+  ['Timeline', '/admin/timeline', History],
+  ['Messages', '/admin/messages', Mail],
+  ['Settings', '/admin/settings', Settings],
 ] as const;
 
 export default function AdminDashboardPage() {
@@ -39,13 +80,55 @@ export default function AdminDashboardPage() {
       setIsLoading(false);
       return;
     }
-    setStats({ education: education.count ?? 0, experiences: experiences.count ?? 0, achievements: achievements.count ?? 0, skills: skills.count ?? 0, articles: articles.count ?? 0, galleryImages: galleryImages.count ?? 0, timelineItems: timelineItems.count ?? 0, unreadMessages: unreadMessages.count ?? 0 });
+    let certCount = initialCertificates.length;
+    try {
+      const saved = localStorage.getItem(CERT_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) certCount = parsed.length;
+      }
+    } catch {
+      // fallback
+    }
+
+    let docCount = initialHubDocuments.length;
+    try {
+      const savedDocs = localStorage.getItem(DOCS_STORAGE_KEY);
+      if (savedDocs) {
+        const parsed = JSON.parse(savedDocs);
+        if (Array.isArray(parsed)) docCount = parsed.length;
+      }
+    } catch {
+      // fallback
+    }
+
+    setStats({
+      education: education.count ?? 0,
+      experiences: experiences.count ?? 0,
+      achievements: achievements.count ?? 0,
+      skills: skills.count ?? 0,
+      articles: articles.count ?? 0,
+      galleryImages: galleryImages.count ?? 0,
+      timelineItems: timelineItems.count ?? 0,
+      unreadMessages: unreadMessages.count ?? 0,
+      certificates: certCount,
+      documents: docCount,
+    });
     setIsLoading(false);
   }, []);
 
   useEffect(() => { void loadStats(); }, [loadStats]);
   const cards = [
-    ['Education', stats.education, 'academic records', '/admin/education', GraduationCap, 'bg-sky-50 text-sky-700'], ['Experience', stats.experiences, 'career positions', '/admin/experience', Briefcase, 'bg-violet-50 text-violet-700'], ['Achievements', stats.achievements, 'honors and awards', '/admin/achievements', Award, 'bg-gold-50 text-gold-700'], ['Skills', stats.skills, 'competencies listed', '/admin/skills', Layers, 'bg-emerald-50 text-emerald-700'], ['Articles', stats.articles, 'articles in library', '/admin/articles', FileText, 'bg-rose-50 text-rose-700'], ['Gallery', stats.galleryImages, 'portfolio images', '/admin/gallery', ImageIcon, 'bg-cyan-50 text-cyan-700'], ['Timeline', stats.timelineItems, 'career milestones', '/admin/timeline', History, 'bg-indigo-50 text-indigo-700'], ['Unread Messages', stats.unreadMessages, 'awaiting review', '/admin/messages', Mail, 'bg-amber-50 text-amber-700'],
+    ['Document Hub', stats.documents, 'CV & policy briefs in hub', '/admin/documents', BookOpen, 'bg-emerald-50 text-emerald-800'],
+    ['Certificates', stats.certificates, 'verified credentials in vault', '/admin/certificates', ShieldCheck, 'bg-amber-50 text-amber-800'],
+    ['Education', stats.education, 'academic records', '/admin/education', GraduationCap, 'bg-sky-50 text-sky-700'],
+    ['Experience', stats.experiences, 'career positions', '/admin/experience', Briefcase, 'bg-violet-50 text-violet-700'],
+    ['Achievements', stats.achievements, 'honors and awards', '/admin/achievements', Award, 'bg-gold-50 text-gold-700'],
+    ['Skills', stats.skills, 'competencies listed', '/admin/skills', Layers, 'bg-teal-50 text-teal-700'],
+    ['Articles', stats.articles, 'articles in library', '/admin/articles', FileText, 'bg-rose-50 text-rose-700'],
+    ['Gallery', stats.galleryImages, 'portfolio images', '/admin/gallery', ImageIcon, 'bg-cyan-50 text-cyan-700'],
+    ['Timeline', stats.timelineItems, 'career milestones', '/admin/timeline', History, 'bg-indigo-50 text-indigo-700'],
+    ['Unread Messages', stats.unreadMessages, 'awaiting review', '/admin/messages', Mail, 'bg-red-50 text-red-700'],
   ] as const;
 
   return <div className="mx-auto max-w-7xl space-y-8 animate-fadeIn">

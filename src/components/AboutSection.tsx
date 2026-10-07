@@ -12,7 +12,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import SectionHeading from './SectionHeading';
-import { profile } from '@/data/profile';
+import { usePublicContent } from '@/context/PublicContentContext';
 
 interface PillarDetail {
   icon: typeof Briefcase;
@@ -147,7 +147,12 @@ const aboutPillars: PillarDetail[] = [
   },
 ];
 
-export default function AboutSection() {
+interface AboutSectionProps {
+  onOpenTextView?: () => void;
+}
+
+export default function AboutSection({ onOpenTextView }: AboutSectionProps) {
+  const { profile } = usePublicContent();
   const [selectedPillarIndex, setSelectedPillarIndex] = useState<number | null>(null);
 
   const activePillar = selectedPillarIndex !== null ? aboutPillars[selectedPillarIndex] : null;
@@ -197,6 +202,8 @@ export default function AboutSection() {
           <SectionHeading
             eyebrow="About"
             title="A professional journey bridging enterprise, governance, and law"
+            actionLabel="Read in Text Dossier ↗"
+            onAction={onOpenTextView}
           />
         </div>
 
@@ -204,7 +211,7 @@ export default function AboutSection() {
           <div className="reveal lg:col-span-2">
             <div className="space-y-6 text-base leading-relaxed text-navy-700 sm:text-lg">
               <p>
-                {profile.fullName}, also known professionally as {profile.professionalName}, is a
+                {profile?.full_name ?? 'Blama S. Blama'}, also known professionally as {profile?.professional_name ?? 'Blama S. Blama'}, is a
                 Liberian professional whose career reflects a steady commitment to management,
                 public service, and the pursuit of justice. His background spans business
                 operations, community development, national-level public-sector exposure, and

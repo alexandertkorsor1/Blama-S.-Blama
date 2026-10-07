@@ -4,7 +4,9 @@ import {
   ArrowLeft,
   CheckCircle2,
   Info,
+  KeyRound,
   Loader2,
+  Mail,
   RefreshCw,
   Save,
   Settings,
@@ -12,6 +14,8 @@ import {
   X,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+import { useSectionContent } from '@/hooks/useSectionContent';
 import type { Database } from '@/types/database.types';
 
 type SiteSettings = Database['public']['Tables']['site_settings']['Row'];
@@ -47,11 +51,17 @@ const formatUpdatedAt = (value: string) => {
 };
 
 export default function AdminSettingsPage() {
+  const { user } = useAuth();
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [form, setForm] = useState<SettingsForm>(emptyForm);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [accountEmail, setAccountEmail] = useState(user?.email ?? '');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isUpdatingAccount, setIsUpdatingAccount] = useState(false);
+  const [accountFeedback, setAccountFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
@@ -75,6 +85,10 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     void loadSettings();
   }, [loadSettings]);
+
+  useEffect(() => {
+    setAccountEmail(user?.email ?? '');
+  }, [user?.email]);
 
   const setField = <Key extends keyof SettingsForm>(field: Key, value: SettingsForm[Key]) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -126,6 +140,68 @@ export default function AdminSettingsPage() {
     setIsSaving(false);
   };
 
+  const updateEmail = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isUpdatingAccount || !user) return;
+
+    const requestedEmail = accountEmail.trim().toLowerCase();
+    if (!requestedEmail || !requestedEmail.includes('@')) {
+      setAccountFeedback({ type: 'error', text: 'Enter a valid email address.' });
+      return;
+    }
+    if (requestedEmail === user.email) {
+      setAccountFeedback({ type: 'error', text: 'Enter an email address that differs from your current email.' });
+      return;
+    }
+
+    setIsUpdatingAccount(true);
+    setAccountFeedback(null);
+    const { data, error } = await supabase.auth.updateUser({ email: requestedEmail });
+
+    if (error) {
+      setAccountFeedback({ type: 'error', text: 'Unable to request an email change. Please try again.' });
+    } else if (data.user.email === requestedEmail) {
+      const { error: syncError } = await supabase
+        .from('admin_users')
+        .update({ email: requestedEmail })
+        .eq('id', data.user.id);
+
+      setAccountFeedback(syncError
+        ? { type: 'success', text: 'Your email was updated. It will synchronize to the administrator record when you next sign in.' }
+        : { type: 'success', text: 'Your email and administrator record were updated successfully.' });
+    } else {
+      setAccountFeedback({ type: 'success', text: 'Check your email to confirm this change. Your administrator record will update after confirmation.' });
+    }
+    setIsUpdatingAccount(false);
+  };
+
+  const updatePassword = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isUpdatingAccount) return;
+
+    if (newPassword.length < 8) {
+      setAccountFeedback({ type: 'error', text: 'Use a password with at least 8 characters.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setAccountFeedback({ type: 'error', text: 'The new password and confirmation do not match.' });
+      return;
+    }
+
+    setIsUpdatingAccount(true);
+    setAccountFeedback(null);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+    if (error) {
+      setAccountFeedback({ type: 'error', text: 'Unable to update your password. Please try again.' });
+    } else {
+      setNewPassword('');
+      setConfirmPassword('');
+      setAccountFeedback({ type: 'success', text: 'Your password was updated successfully.' });
+    }
+    setIsUpdatingAccount(false);
+  };
+
   return (
     <div className="mx-auto max-w-5xl space-y-6 animate-fadeIn">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -163,7 +239,178 @@ export default function AdminSettingsPage() {
 
         <div className="flex flex-col-reverse gap-3 border-t border-navy-100 bg-navy-50/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7"><p className="text-xs text-navy-500">{settings ? 'Saving updates the existing settings record.' : 'Initialization creates a single settings record.'}</p><button type="submit" disabled={isSaving} className="btn-primary !px-4 !py-2.5 !text-xs disabled:cursor-not-allowed disabled:opacity-60">{isSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}{isSaving ? 'Saving…' : settings ? 'Save Settings' : 'Initialize Settings'}</button></div>
       </form>}
+
+      {/* Global Section Titles & Subtitles Manager */}
+      <SectionHeadingsEditor />
+
+      {!isLoading && <section className="card overflow-hidden border border-navy-200 shadow-sm" aria-labelledby="account-security-heading">
+        <div className="flex flex-col gap-3 border-b border-navy-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+          <div><h2 id="account-security-heading" className="font-serif text-xl font-bold text-navy-950">Account Security</h2><p className="mt-1 text-sm text-navy-600">Manage the email and password for the signed-in administrator account.</p></div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-100 px-3 py-1.5 text-xs font-semibold text-navy-700"><ShieldCheck size={14} /> Signed-in account</span>
+        </div>
+
+        {accountFeedback && <div role={accountFeedback.type === 'error' ? 'alert' : 'status'} className={`mx-5 mt-5 flex items-start gap-3 rounded-xl border px-4 py-3 text-sm sm:mx-7 ${accountFeedback.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}`}><span>{accountFeedback.text}</span></div>}
+
+        <div className="grid gap-7 px-5 py-6 sm:px-7 lg:grid-cols-2">
+          <form onSubmit={updateEmail} className="rounded-xl border border-navy-100 bg-cream-50 p-5">
+            <div className="flex items-center gap-2 text-navy-950"><Mail size={18} className="text-gold-600" /><h3 className="font-serif text-lg font-bold">Change email</h3></div>
+            <p className="mt-2 text-xs leading-relaxed text-navy-600">Supabase may send a confirmation link to complete an email change. The administrator record synchronizes only after the verified email is active.</p>
+            <label className="mt-5 block text-sm font-semibold text-navy-800">New administrator email<input type="email" value={accountEmail} onChange={(event) => setAccountEmail(event.target.value)} autoComplete="email" disabled={!user || isUpdatingAccount} required className="input mt-1.5 w-full disabled:cursor-not-allowed disabled:opacity-60" /></label>
+            <button type="submit" disabled={!user || isUpdatingAccount} className="btn-secondary mt-5 !px-4 !py-2.5 !text-xs disabled:cursor-not-allowed disabled:opacity-60">{isUpdatingAccount ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}{isUpdatingAccount ? 'Updating…' : 'Update Email'}</button>
+          </form>
+
+          <form onSubmit={updatePassword} className="rounded-xl border border-navy-100 bg-cream-50 p-5">
+            <div className="flex items-center gap-2 text-navy-950"><KeyRound size={18} className="text-gold-600" /><h3 className="font-serif text-lg font-bold">Change password</h3></div>
+            <p className="mt-2 text-xs leading-relaxed text-navy-600">Passwords are secured by Supabase Auth and are never saved in the portfolio database.</p>
+            <div className="mt-5 space-y-4"><label className="block text-sm font-semibold text-navy-800">New password<input type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} autoComplete="new-password" minLength={8} disabled={!user || isUpdatingAccount} required className="input mt-1.5 w-full disabled:cursor-not-allowed disabled:opacity-60" /></label><label className="block text-sm font-semibold text-navy-800">Confirm new password<input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={8} disabled={!user || isUpdatingAccount} required className="input mt-1.5 w-full disabled:cursor-not-allowed disabled:opacity-60" /></label></div>
+            <button type="submit" disabled={!user || isUpdatingAccount} className="btn-primary mt-5 !px-4 !py-2.5 !text-xs disabled:cursor-not-allowed disabled:opacity-60">{isUpdatingAccount ? <Loader2 size={15} className="animate-spin" /> : <KeyRound size={15} />}{isUpdatingAccount ? 'Updating…' : 'Update Password'}</button>
+          </form>
+        </div>
+      </section>}
     </div>
+  );
+}
+
+function SectionHeadingsEditor() {
+  const { sections, updateSectionMeta, resetAllSections } = useSectionContent();
+  const [edu, setEdu] = useState(sections.education);
+  const [exp, setExp] = useState(sections.experience);
+  const [ach, setAch] = useState(sections.achievements);
+  const [skl, setSkl] = useState(sections.skills);
+  const [art, setArt] = useState(sections.articles);
+  const [cert, setCert] = useState(sections.certificates);
+  const [doc, setDoc] = useState(sections.documents);
+  const [savedNotice, setSavedNotice] = useState(false);
+
+  useEffect(() => {
+    setEdu(sections.education);
+    setExp(sections.experience);
+    setAch(sections.achievements);
+    setSkl(sections.skills);
+    setArt(sections.articles);
+    setCert(sections.certificates);
+    setDoc(sections.documents);
+  }, [sections]);
+
+  const handleSaveHeadings = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSectionMeta('education', edu);
+    updateSectionMeta('experience', exp);
+    updateSectionMeta('achievements', ach);
+    updateSectionMeta('skills', skl);
+    updateSectionMeta('articles', art);
+    updateSectionMeta('certificates', cert);
+    updateSectionMeta('documents', doc);
+    setSavedNotice(true);
+    setTimeout(() => setSavedNotice(false), 3500);
+  };
+
+  const handleReset = () => {
+    if (!window.confirm('Reset all section headings and subtitles to curated defaults?')) return;
+    resetAllSections();
+  };
+
+  const sectionRows = [
+    { key: 'education', label: 'Education & Academic Foundations', state: edu, setter: setEdu },
+    { key: 'experience', label: 'Experience & Professional Roles', state: exp, setter: setExp },
+    { key: 'achievements', label: 'Achievements & Accreditations', state: ach, setter: setAch },
+    { key: 'skills', label: 'Competencies & Accreditations', state: skl, setter: setSkl },
+    { key: 'articles', label: 'Insights, Treatises & Publications', state: art, setter: setArt },
+    { key: 'certificates', label: 'Verified Certificate Vault', state: cert, setter: setCert },
+    { key: 'documents', label: 'Curriculum Vitae & Document Hub', state: doc, setter: setDoc },
+  ];
+
+  return (
+    <section className="card overflow-hidden border border-navy-200 shadow-sm">
+      <div className="flex flex-col gap-4 border-b border-navy-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+        <div>
+          <h2 className="font-serif text-xl font-bold text-navy-950">
+            Portfolio Section Headings & Subtitles
+          </h2>
+          <p className="mt-1 text-sm text-navy-600">
+            Full administrative control over eyebrows, main headlines, and descriptive copy across all portfolio sections.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleReset}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-navy-200 bg-white px-3 py-1.5 text-xs font-semibold text-navy-700 hover:bg-navy-50 transition-colors"
+        >
+          <RefreshCw size={13} /> Reset Headings
+        </button>
+      </div>
+
+      {savedNotice && (
+        <div className="mx-5 mt-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 sm:mx-7">
+          <CheckCircle2 size={16} className="text-emerald-600" />
+          Section headings and subtitles updated successfully.
+        </div>
+      )}
+
+      <form onSubmit={handleSaveHeadings} className="p-5 sm:p-7 space-y-6">
+        <div className="space-y-6">
+          {sectionRows.map((row) => (
+            <div key={row.key} className="rounded-2xl border border-parchment-200 bg-parchment-50/50 p-4 sm:p-5 space-y-3">
+              <div className="flex items-center justify-between border-b border-parchment-200 pb-2">
+                <h3 className="font-serif text-sm font-bold text-navy-950">
+                  {row.label}
+                </h3>
+                <span className="font-mono text-[10px] uppercase tracking-wider text-gold-700 font-semibold">
+                  Section #{row.key}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-navy-700">
+                    Eyebrow / Overline
+                  </label>
+                  <input
+                    type="text"
+                    value={row.state.eyebrow}
+                    onChange={(e) => row.setter({ ...row.state, eyebrow: e.target.value })}
+                    className="mt-1 w-full rounded-lg border border-navy-200 bg-white px-3 py-1.5 text-xs font-semibold text-navy-950 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-navy-700">
+                    Main Heading Title
+                  </label>
+                  <input
+                    type="text"
+                    value={row.state.title}
+                    onChange={(e) => row.setter({ ...row.state, title: e.target.value })}
+                    className="mt-1 w-full rounded-lg border border-navy-200 bg-white px-3 py-1.5 text-xs font-bold text-navy-950 focus:outline-none"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-semibold text-navy-700">
+                    Subtitle / Section Description
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={row.state.description}
+                    onChange={(e) => row.setter({ ...row.state, description: e.target.value })}
+                    className="mt-1 w-full resize-none rounded-lg border border-navy-200 bg-white px-3 py-1.5 text-xs text-navy-800 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <button
+            type="submit"
+            className="btn-gold !py-2.5 !px-6 text-xs font-bold shadow-md"
+          >
+            <Save size={15} /> Save All Section Headings
+          </button>
+        </div>
+      </form>
+    </section>
   );
 }
 

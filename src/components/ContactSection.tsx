@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Mail, Linkedin, MapPin, Send, AlertCircle, CheckCircle } from 'lucide-react';
 import SectionHeading from './SectionHeading';
-import { profile } from '@/data/profile';
+import { supabase } from '@/lib/supabase';
+import { usePublicContent } from '@/context/PublicContentContext';
 
 interface FormState {
   name: string;
@@ -25,9 +26,11 @@ const initialForm: FormState = {
 };
 
 export default function ContactSection() {
+  const { profile, settings } = usePublicContent();
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FormErrors>({});
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validate = (): FormErrors => {
     const e: FormErrors = {};
@@ -46,7 +49,7 @@ export default function ContactSection() {
     return e;
   };
 
-  const handleSubmit = (ev: React.FormEvent) => {
+  const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
@@ -55,13 +58,20 @@ export default function ContactSection() {
       return;
     }
     setErrors({});
-    const subject = encodeURIComponent(`[Portfolio Contact] ${form.subject}`);
-    const body = encodeURIComponent(
-      `Name: ${form.name}\nEmail: ${form.email}\n\nMessage:\n${form.message}`
-    );
-    window.location.href = `mailto:${profile.email}?subject=${subject}&body=${body}`;
-    setStatus('success');
-    setForm(initialForm);
+    setIsSubmitting(true);
+    const { error } = await supabase.from('contact_messages').insert({
+      name: form.name.trim(),
+      email: form.email.trim(),
+      subject: form.subject.trim(),
+      message: form.message.trim(),
+    });
+    if (error) {
+      setStatus('error');
+    } else {
+      setStatus('success');
+      setForm(initialForm);
+    }
+    setIsSubmitting(false);
   };
 
   const handleChange = (field: keyof FormState) => (ev: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -94,7 +104,7 @@ export default function ContactSection() {
               <h3 className="font-serif text-lg font-bold text-navy-900">Direct Contact</h3>
               <div className="mt-5 space-y-4">
                 <a
-                  href={`mailto:${profile.email}`}
+                  href={`mailto:${profile?.email ?? ''}`}
                   className="flex items-center gap-4 text-sm text-navy-700 transition-colors hover:text-gold-600"
                 >
                   <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-navy-50 text-navy-800">
@@ -102,12 +112,12 @@ export default function ContactSection() {
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-navy-400">Email</p>
-                    <p className="font-medium">{profile.email}</p>
+                    <p className="font-medium">{profile?.email ?? 'Email available on request'}</p>
                   </div>
                 </a>
 
                 <a
-                  href={profile.linkedin}
+                  href={profile?.linkedin ?? '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-4 text-sm text-navy-700 transition-colors hover:text-gold-600"
@@ -127,7 +137,7 @@ export default function ContactSection() {
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-navy-400">Location</p>
-                    <p className="font-medium">{profile.location}</p>
+                    <p className="font-medium">{profile?.location ?? ''}</p>
                   </div>
                 </div>
               </div>
@@ -135,15 +145,13 @@ export default function ContactSection() {
 
             <div className="rounded-xl border border-gold-200 bg-gold-50 p-6">
               <p className="text-sm leading-relaxed text-navy-700">
-                <span className="font-semibold">Professional note:</span> This contact form opens
-                your email client with a pre-filled message. For verified professional inquiries
-                only — please allow time for a response.
+                <span className="font-semibold">Professional note:</span> Messages are delivered securely to the portfolio administrator. For verified professional inquiries only — please allow time for a response.
               </p>
             </div>
           </div>
 
           <div className="reveal" style={{ transitionDelay: '0.1s' }}>
-            <form onSubmit={handleSubmit} className="card p-6 sm:p-8 space-y-5" noValidate>
+            {settings?.contact_form_enabled !== false ? <form onSubmit={handleSubmit} className="card p-6 sm:p-8 space-y-5" noValidate>
               <div>
                 <label htmlFor="name" className="block text-xs font-semibold uppercase tracking-wider text-navy-500">
                   Full Name
@@ -232,15 +240,15 @@ export default function ContactSection() {
                 )}
               </div>
 
-              <button type="submit" className="btn-primary w-full justify-center">
-                <Send size={16} />
-                Send Message
-              </button>
+                <button type="submit" disabled={isSubmitting} className="btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60">
+                  <Send size={16} />
+                  {isSubmitting ? 'Sending…' : 'Send Message'}
+                </button>
 
               {status === 'success' && (
-                <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-sm text-green-700">
-                  <CheckCircle size={16} />
-                  Your email client should open with the message pre-filled.
+                <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-sm text-green-800 border border-green-200">
+                  <CheckCircle size={16} className="text-green-600" />
+                  Thank you. Your message has been received securely.
                 </div>
               )}
               {status === 'error' && Object.keys(errors).length > 0 && (
@@ -249,7 +257,7 @@ export default function ContactSection() {
                   Please correct the highlighted fields above.
                 </div>
               )}
-            </form>
+            </form> : <div className="card p-8 text-center"><Mail className="mx-auto text-gold-600" size={28} /><h3 className="mt-4 font-serif text-xl font-bold text-navy-900">Contact form temporarily unavailable</h3><p className="mt-2 text-sm text-navy-600">Please use the direct contact details when they are available.</p></div>}
           </div>
         </div>
       </div>

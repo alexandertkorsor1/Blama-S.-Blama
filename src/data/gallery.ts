@@ -1,68 +1,107 @@
 export interface GalleryImage {
   src: string;
+  title: string;
   alt: string;
   category: 'Education' | 'Professional' | 'PYPP' | 'Public Service' | 'Events';
+  location?: string;
+  date?: string;
 }
 
 export const galleryImages: GalleryImage[] = [
   {
     src: `${import.meta.env.BASE_URL}gallery/blama-portrait-robes.jpg`,
-    alt: 'Blama S. Blama — Professional portrait in academic & legal honors regalia',
+    title: 'Academic & Legal Honors Regalia',
+    alt: 'Blama S. Blama in academic and legal honors regalia — University of Liberia & UMU',
     category: 'Education',
+    location: 'Monrovia, Liberia',
+    date: '2021',
   },
   {
     src: `${import.meta.env.BASE_URL}gallery/blama-formal-suit.jpg`,
-    alt: 'Blama S. Blama — Executive formal portrait in tailored navy suit & gold tie',
+    title: 'Executive Leadership Formal Portrait',
+    alt: 'Blama S. Blama in tailored executive formal suit — Public Administration & Management',
     category: 'Professional',
+    location: 'Monrovia, Liberia',
+    date: '2023',
   },
   {
     src: `${import.meta.env.BASE_URL}gallery/blama-law-library-books.png`,
-    alt: 'Legal Studies & Research — With Federal Supplement law volumes in the library',
+    title: 'Statutory Research & Jurisprudence',
+    alt: 'Legal Studies & Research with Federal Supplement and Liberian Law volumes',
     category: 'Education',
+    location: 'Louis Arthur Grimes Law Library',
+    date: '2024',
   },
   {
     src: `${import.meta.env.BASE_URL}gallery/blama-judiciary-sinoe-county.png`,
-    alt: 'Public Service & Governance — The Judiciary, 3rd Judicial Circuit Court, Greenville City, Sinoe County',
+    title: 'The Judiciary — 3rd Judicial Circuit Court',
+    alt: 'Public service and governance mission at the 3rd Judicial Circuit Court in Greenville City, Sinoe County',
     category: 'PYPP',
+    location: 'Greenville City, Sinoe County',
+    date: '2024',
   },
   {
     src: `${import.meta.env.BASE_URL}gallery/blama-pypp-fieldwork-warehouse.jpg`,
-    alt: 'PYPP Field Operations — President\'s Young Professionals Program logistics & administration',
+    title: 'Field Logistics & Defense Administration',
+    alt: 'President\'s Young Professionals Program field operations and public-sector logistics',
     category: 'PYPP',
+    location: 'Ministry of National Defense Facilities',
+    date: '2023',
   },
   {
     src: `${import.meta.env.BASE_URL}gallery/blama-law-celebration-family.jpg`,
-    alt: 'Louis Arthur Grimes School of Law — Graduation celebration banner with family',
+    title: 'Law School Milestone Celebration',
+    alt: 'Louis Arthur Grimes School of Law celebration banner with family and supporters',
     category: 'Education',
+    location: 'Monrovia, Liberia',
+    date: '2024',
   },
   {
     src: `${import.meta.env.BASE_URL}gallery/blama-law-graduation-ceremony.jpg`,
-    alt: 'Law School Graduation Ceremony — Academic recognition and celebration',
+    title: 'Academic Recognition & Ceremony',
+    alt: 'Law school academic recognition and formal milestone ceremony',
     category: 'Events',
+    location: 'University Auditorium',
+    date: '2024',
   },
   {
     src: `${import.meta.env.BASE_URL}gallery/blama-campus-graduation-family.png`,
-    alt: 'Campus Graduation Milestone — Celebrating with family on university grounds',
+    title: 'University Campus Graduation',
+    alt: 'Celebrating graduation milestone with family on university grounds',
     category: 'Events',
+    location: 'University Campus',
+    date: '2021',
   },
   {
     src: `${import.meta.env.BASE_URL}gallery/blama-academic-remarks-family.jpg`,
-    alt: 'Delivering formal remarks during academic graduation milestone celebration',
+    title: 'Formal Academic Remarks',
+    alt: 'Delivering formal remarks during milestone academic celebration',
     category: 'Events',
+    location: 'Monrovia, Liberia',
+    date: '2021',
   },
   {
     src: `${import.meta.env.BASE_URL}gallery/blama-graduation-celebration.jpg`,
-    alt: 'Celebrating graduation milestone achievements with family and supporters',
+    title: 'Milestone Honors Celebration',
+    alt: 'Celebrating academic milestones with mentors and peers',
     category: 'Education',
+    location: 'Monrovia, Liberia',
+    date: '2021',
   },
   {
     src: `${import.meta.env.BASE_URL}gallery/blama-judiciary-sinoe-county.png`,
-    alt: 'Liberian Public Service & Legal Institutions — Field delegation in Sinoe County',
+    title: 'Decentralized Judicial Governance Delegation',
+    alt: 'Official judicial delegation and field administration mission in Sinoe County',
     category: 'Public Service',
+    location: 'Sinoe County, Liberia',
+    date: '2024',
   },
   {
-    src: 'https://images.pexels.com/photos/27848721/pexels-photo-27848721.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
-    alt: 'Monrovia, Republic of Liberia — Urban coastline and national landscape',
+    src: `${import.meta.env.BASE_URL}gallery/blama-formal-suit.jpg`,
+    title: 'Civil Service Public Administration',
+    alt: 'Ministry of National Defense administrative leadership and governance representation',
     category: 'Public Service',
+    location: 'Republic of Liberia',
+    date: '2024',
   },
 ];

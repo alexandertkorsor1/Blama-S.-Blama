@@ -1,36 +1,62 @@
 export interface Achievement {
-  category: 'Academic' | 'Professional' | 'Fellowship' | 'Leadership' | 'Certifications' | 'Recognition';
+  id: string;
+  category: 'Fellowship' | 'Academic' | 'Professional' | 'Leadership' | 'Recognition';
   title: string;
   organization: string;
-  year: string | null;
+  year: string;
   description: string;
   verified: boolean;
 }
 
 export const achievements: Achievement[] = [
   {
+    id: 'ach-pypp',
     category: 'Fellowship',
-    title: "President's Young Professionals Program — Class XI",
-    organization: 'PYPP',
-    year: null,
+    title: "President's Young Professionals Program (PYPP) Fellow — Class XI",
+    organization: "President's Young Professionals Program",
+    year: '2023',
     description:
-      'Selected for a competitive professional development and public-service fellowship program for emerging Liberian leaders.',
+      'Inducted into Class XI of Liberia\'s premier public-service leadership fellowship following a nationwide competitive merit-based selection process.',
     verified: true,
   },
   {
+    id: 'ach-bba',
     category: 'Academic',
-    title: 'Bachelor of Business Administration in Management',
-    organization: 'United Methodist University',
+    title: 'Bachelor of Business Administration (BBA) in Management',
+    organization: 'United Methodist University (UMU)',
     year: '2021',
-    description: 'Completed undergraduate studies in business management.',
+    description:
+      'Awarded undergraduate degree with concentration in strategic business administration, operations planning, and managerial economics.',
     verified: true,
   },
   {
+    id: 'ach-defense',
     category: 'Professional',
-    title: 'Public-Service Placement',
+    title: 'National Defense Public Administration Placement',
     organization: 'Ministry of National Defense, Republic of Liberia',
-    year: null,
-    description: 'Professional fellowship placement at a national ministry through the PYPP program.',
+    year: '2023 – Present',
+    description:
+      'Entrusted with key administrative responsibilities and civilian governance tasks at the national defense headquarters.',
+    verified: true,
+  },
+  {
+    id: 'ach-law',
+    category: 'Leadership',
+    title: 'Legal Jurisprudence Scholar',
+    organization: 'Louis Arthur Grimes School of Law (University of Liberia)',
+    year: 'Current',
+    description:
+      'Active legal scholarship candidate focusing on constitutional doctrine, commercial transactions, statutory research, and equal justice.',
+    verified: true,
+  },
+  {
+    id: 'ach-judiciary',
+    category: 'Recognition',
+    title: 'Circuit Court & Judicial Institutions Delegation',
+    organization: 'The Judiciary — 3rd Judicial Circuit Court, Sinoe County',
+    year: '2024',
+    description:
+      'Selected for institutional field engagements and judicial observation in Greenville City, reinforcing understanding of decentralized rule of law.',
     verified: true,
   },
 ];

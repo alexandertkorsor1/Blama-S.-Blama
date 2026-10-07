@@ -1,66 +1,82 @@
 export interface TimelineEntry {
+  id: string;
   year: string;
   category: 'Education' | 'Professional' | 'PYPP' | 'Public Service' | 'Legal Studies' | 'Future';
   title: string;
   organization: string;
   description: string;
+  location?: string;
 }
 
 export const timelineEntries: TimelineEntry[] = [
   {
-    year: '2018–2021',
+    id: 'tl-1',
+    year: '2018 – 2021',
     category: 'Education',
-    title: 'Bachelor of Business Administration',
-    organization: 'United Methodist University',
+    title: 'Bachelor of Business Administration (BBA) in Management',
+    organization: 'United Methodist University (UMU)',
     description:
-      'Pursued undergraduate studies in Management, building a foundation in organizational leadership, business strategy, and administrative practice.',
+      'Completed comprehensive undergraduate management degree with deep focus on organizational stewardship, administrative frameworks, and enterprise economics.',
+    location: 'Monrovia, Liberia',
   },
   {
-    year: '',
+    id: 'tl-2',
+    year: '2019 – 2021',
+    category: 'Professional',
+    title: 'Administrative Assistant & Civic Coordinator',
+    organization: 'Block 3-Self Help Community Initiative',
+    description:
+      'Coordinated local community action projects, maintained official administrative logs, and managed civic stakeholder deliberations.',
+    location: 'Montserrado County, Liberia',
+  },
+  {
+    id: 'tl-3',
+    year: '2021 – 2023',
     category: 'Professional',
     title: 'Operations Manager',
     organization: 'Fassah Business Center',
     description:
-      'Managed day-to-day operations and organizational coordination within a business environment, developing practical experience in management and administration.',
+      'Managed commercial operations, streamlined inventory logs, supervised staff workflows, and drove client satisfaction and operational efficiency.',
+    location: 'Monrovia, Liberia',
   },
   {
-    year: '',
-    category: 'Professional',
-    title: 'Administrative Assistant',
-    organization: 'Block 3-Self Help Community Initiative',
-    description:
-      'Supported community-driven development through administrative coordination and organizational assistance.',
-  },
-  {
-    year: 'Class XI',
+    id: 'tl-4',
+    year: '2023 – Present',
     category: 'PYPP',
-    title: "President's Young Professionals Program",
-    organization: 'PYPP — Class XI',
+    title: "President's Young Professionals Program (PYPP) Fellow",
+    organization: 'President\'s Young Professionals Program (Class XI)',
     description:
-      'Selected for a prestigious professional development and public-service fellowship program designed to cultivate the next generation of Liberian public-sector leaders.',
+      'Selected into Liberia\'s foremost merit-based public leadership fellowship, completing intensive civil-service ethics, policy, and executive governance modules.',
+    location: 'Republic of Liberia',
   },
   {
-    year: '',
+    id: 'tl-5',
+    year: '2023 – Present',
     category: 'Public Service',
-    title: 'Professional Placement',
+    title: 'National Defense Administrative Placement',
     organization: 'Ministry of National Defense, Republic of Liberia',
     description:
-      'Served through a PYPP professional placement at the Ministry of National Defense, gaining direct exposure to public-sector governance and national institutional operations.',
+      'Deployed under PYPP fellowship to support civilian defense administration, official documentation, logistics coordination, and inter-agency state missions.',
+    location: 'Barclay Training Center / Monrovia, Liberia',
   },
   {
-    year: '',
+    id: 'tl-6',
+    year: '2024 – Present',
     category: 'Legal Studies',
-    title: 'Legal Studies',
-    organization: 'Louis Arthur Grimes School of Law',
+    title: 'Legal Scholar & LL.B Candidate',
+    organization: 'Louis Arthur Grimes School of Law (University of Liberia)',
     description:
-      'Pursued legal education at Liberia\'s premier law school, with professional interests in legal research, equal justice, and the rule of law.',
+      'Pursuing formal legal education at Liberia\'s premier faculty of law, concentrating on statutory research, commercial arbitration, constitutional doctrine, and equal justice.',
+    location: 'University of Liberia Capitol Hill Campus',
   },
   {
-    year: 'Next Chapter',
+    id: 'tl-7',
+    year: 'Strategic Horizon',
     category: 'Future',
-    title: 'Continued Professional Development',
-    organization: 'Forward',
+    title: 'Executive Leadership & National Governance Impact',
+    organization: 'Republic of Liberia',
     description:
-      'Committed to continuous growth at the intersection of business management, public service, and legal research — advancing toward leadership roles that serve Liberia\'s development.',
+      'Synthesizing enterprise management, public administration, and statutory legal mastery to serve Liberia at the highest levels of governance, commerce, and judicial reform.',
+    location: 'Liberia & International Platforms',
   },
 ];

@@ -14,13 +14,13 @@ export interface Profile {
 export const profile: Profile = {
   fullName: 'Blama S. Blama',
   professionalName: 'Saah Blama',
-  title: 'Business Management Professional | Law Student | Public-Service & Leadership Professional',
-  tagline: 'Built with purpose. Driven by impact.',
-  country: 'Liberia',
-  email: 'blama.s.blama@example.com',
+  title: 'Business Management Professional | Law Scholar | Public Administration & PYPP Fellow',
+  tagline: 'Bridging Enterprise Acumen, Public Service Stewardship & Equal Justice',
+  country: 'Republic of Liberia',
+  email: 'blama.s.blama@alumni.umu.edu.lr',
   linkedin: 'https://www.linkedin.com/in/saahblama',
   location: 'Monrovia, Republic of Liberia',
   statement:
-    'A Liberian professional grounded in business management and driven by a commitment to public service, leadership, and the rule of law. My journey bridges organizational excellence with a deepening pursuit of legal research and equal justice — building toward a future where governance and enterprise serve all citizens equitably.',
-  photo: `${import.meta.env.BASE_URL}profile.jpg`, // Place your image in public/profile.jpg or use an external URL
+    'A Liberian professional grounded in enterprise management and dedicated to public service, ethical leadership, and statutory jurisprudence. My career unites operational discipline with legal scholarship at the Louis Arthur Grimes School of Law — actively building toward a future where national institutions, commercial frameworks, and governance serve all citizens with equity and integrity.',
+  photo: `${import.meta.env.BASE_URL}profile.jpg`,
 };

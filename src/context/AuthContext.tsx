@@ -45,6 +45,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const syncAdminEmail = useCallback(async (authenticatedUser: User): Promise<void> => {
+    if (!authenticatedUser.email) return;
+
+    const { error } = await supabase
+      .from('admin_users')
+      .update({ email: authenticatedUser.email })
+      .eq('id', authenticatedUser.id);
+
+    if (error) {
+      console.error('[Auth Diagnostic] Unable to synchronize the administrator email:', {
+        message: error.message,
+        code: error.code,
+      });
+    }
+  }, []);
+
   const refreshAdminStatus = useCallback(async (): Promise<boolean> => {
     if (!user) {
       setIsAdmin(false);
@@ -85,6 +101,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (isMounted) {
             setIsAdmin(adminStatus);
           }
+          if (adminStatus) {
+            void syncAdminEmail(currentUser);
+          }
         } else {
           if (isMounted) {
             setIsAdmin(false);
@@ -101,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       const newUser = newSession?.user ?? null;
 
       if (isMounted) {
@@ -110,11 +129,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (newUser) {
-        const adminStatus = await checkAdminStatus(newUser.id);
-        if (isMounted) {
-          setIsAdmin(adminStatus);
-          setIsLoading(false);
-        }
+        // Supabase holds an internal session lock while dispatching auth events.
+        // Schedule database work after the callback to avoid a lock-induced wait.
+        window.setTimeout(() => {
+          void (async () => {
+            const adminStatus = await checkAdminStatus(newUser.id);
+            if (adminStatus) {
+              void syncAdminEmail(newUser);
+            }
+            if (isMounted) {
+              setIsAdmin(adminStatus);
+              setIsLoading(false);
+            }
+          })();
+        }, 0);
       } else {
         if (isMounted) {
           setIsAdmin(false);
@@ -127,7 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isMounted = false;
       authListener.subscription.unsubscribe();
     };
-  }, [checkAdminStatus]);
+  }, [checkAdminStatus, syncAdminEmail]);
 
   const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
     if (!isSupabaseConfigured) {
@@ -240,4 +268,3 @@ export async function isCurrentUserAdmin(userId?: string): Promise<boolean> {
     return false;
   }
 }
-

@@ -1,44 +1,34 @@
-import { Landmark, Award, Heart, TrendingUp } from 'lucide-react';
+import { Landmark, Award, Heart, TrendingUp, Users, Scale } from 'lucide-react';
 import SectionHeading from './SectionHeading';
+import { useSectionContent } from '@/hooks/useSectionContent';
 
-const leadershipAreas = [
-  {
-    icon: Award,
-    title: 'PYPP Fellowship',
-    text: 'Participation in the President\'s Young Professionals Program — a structured leadership development pathway for emerging Liberian public-sector professionals.',
-  },
-  {
-    icon: Landmark,
-    title: 'Ministry Experience',
-    text: 'Direct professional exposure at the Ministry of National Defense, providing insight into national governance and institutional operations.',
-  },
-  {
-    icon: Heart,
-    title: 'Community Involvement',
-    text: 'Administrative support for the Block 3-Self Help Community Initiative, contributing to community-driven development at the local level.',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Leadership Interests',
-    text: 'A demonstrated interest in leadership, professional development, and public service — committed to continuous growth and ethical governance.',
-  },
-];
+const iconLookup: Record<string, typeof Award> = {
+  Award,
+  Landmark,
+  Heart,
+  TrendingUp,
+  Users,
+  Scale,
+};
 
 export default function LeadershipSection() {
+  const { sections } = useSectionContent();
+  const lead = sections.leadership;
+
   return (
     <section id="leadership" className="section-padding py-20 lg:py-28">
       <div className="mx-auto max-w-7xl">
         <div className="reveal">
           <SectionHeading
-            eyebrow="Leadership & Public Service"
-            title="Serving with purpose and integrity"
-            description="Exposure to leadership and public service through fellowship, ministry placement, and community engagement."
+            eyebrow={lead.eyebrow}
+            title={lead.title}
+            description={lead.description}
           />
         </div>
 
         <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:gap-8">
-          {leadershipAreas.map((area, index) => {
-            const Icon = area.icon;
+          {lead.areas.map((area, index) => {
+            const Icon = iconLookup[area.iconName || ''] || [Award, Landmark, Heart, TrendingUp][index % 4];
             return (
               <div
                 key={area.title}

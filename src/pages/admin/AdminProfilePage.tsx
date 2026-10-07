@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw, Save, UserCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import ImageSelectorUploader from '@/components/admin/ImageSelectorUploader';
 
 type ProfileForm = {
   full_name: string;
@@ -12,10 +13,11 @@ type ProfileForm = {
   location: string;
   email: string;
   linkedin: string;
+  profile_image_url: string;
 };
 
 const emptyProfile: ProfileForm = {
-  full_name: '', professional_name: '', title: '', tagline: '', statement: '', country: '', location: '', email: '', linkedin: '',
+  full_name: '', professional_name: '', title: '', tagline: '', statement: '', country: '', location: '', email: '', linkedin: '', profile_image_url: '',
 };
 
 const optionalValue = (value: string) => value.trim() || null;
@@ -63,6 +65,7 @@ export default function AdminProfilePage() {
         location: data.location ?? '',
         email: data.email ?? '',
         linkedin: data.linkedin ?? '',
+        profile_image_url: data.profile_image_url ?? '',
       });
     } catch (error) {
       console.error('[Profile] Unexpected load failure:', error);
@@ -99,6 +102,7 @@ export default function AdminProfilePage() {
       location: optionalValue(form.location),
       email: optionalValue(form.email),
       linkedin: optionalValue(form.linkedin),
+      profile_image_url: optionalValue(form.profile_image_url),
     };
 
     try {
@@ -138,6 +142,7 @@ export default function AdminProfilePage() {
         location: profileData.location ?? '',
         email: profileData.email ?? '',
         linkedin: profileData.linkedin ?? '',
+        profile_image_url: profileData.profile_image_url ?? '',
       });
       setNotice('Profile saved successfully.');
     } catch (error) {
@@ -171,7 +176,18 @@ export default function AdminProfilePage() {
       {notice && <div role="status" className={'mb-5 rounded-xl border p-4 text-sm ' + (notice === 'Profile saved successfully.' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800')}>{notice}</div>}
       <div className="space-y-8"><div><h3 className="font-serif text-lg font-bold text-navy-900">Identity</h3><div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">{fields.slice(0, 3).map(({ field, label, type = 'text', placeholder }) => <label key={field} className="block text-sm font-semibold text-navy-800">{label}<input required={field === 'full_name' || field === 'title'} type={type} value={form[field]} onChange={(event) => updateField(field, event.target.value)} placeholder={placeholder} className="mt-2 w-full rounded-xl border border-navy-200 bg-white px-3.5 py-2.5 text-sm font-normal text-navy-900 outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20" /></label>)}</div></div>
       <div className="border-t border-navy-100 pt-7"><h3 className="font-serif text-lg font-bold text-navy-900">Professional Positioning</h3><div className="mt-4 space-y-4"><label className="block text-sm font-semibold text-navy-800">Tagline<input value={form.tagline} onChange={(event) => updateField('tagline', event.target.value)} placeholder="A concise professional positioning statement" className="mt-2 w-full rounded-xl border border-navy-200 px-3.5 py-2.5 text-sm font-normal outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20" /></label><label className="block text-sm font-semibold text-navy-800">Professional Statement<textarea rows={6} value={form.statement} onChange={(event) => updateField('statement', event.target.value)} placeholder="Write the professional summary displayed on the portfolio." className="mt-2 w-full resize-y rounded-xl border border-navy-200 px-3.5 py-2.5 text-sm font-normal outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20" /></label></div></div>
-      <div className="border-t border-navy-100 pt-7"><h3 className="font-serif text-lg font-bold text-navy-900">Location & Contact</h3><div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">{fields.slice(3).map(({ field, label, type = 'text', placeholder }) => <label key={field} className="block text-sm font-semibold text-navy-800">{label}<input type={type} value={form[field]} onChange={(event) => updateField(field, event.target.value)} placeholder={placeholder} className="mt-2 w-full rounded-xl border border-navy-200 bg-white px-3.5 py-2.5 text-sm font-normal text-navy-900 outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20" /></label>)}</div></div></div>
+      <div className="border-t border-navy-100 pt-7"><h3 className="font-serif text-lg font-bold text-navy-900">Location & Contact</h3><div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">{fields.slice(3).map(({ field, label, type = 'text', placeholder }) => <label key={field} className="block text-sm font-semibold text-navy-800">{label}<input type={type} value={form[field]} onChange={(event) => updateField(field, event.target.value)} placeholder={placeholder} className="mt-2 w-full rounded-xl border border-navy-200 bg-white px-3.5 py-2.5 text-sm font-normal text-navy-900 outline-none transition focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20" /></label>)}</div></div>
+      <div className="border-t border-navy-100 pt-7">
+        <ImageSelectorUploader
+          value={form.profile_image_url}
+          onChange={(newUrl) => updateField('profile_image_url', newUrl)}
+          caption={form.tagline}
+          onCaptionChange={(newCaption) => updateField('tagline', newCaption)}
+          label="Profile & Executive Portrait Image"
+          description="Select an official portrait from the portfolio archive or upload a new photo directly from your device. Add custom photo description and Text of Trust watermark."
+        />
+      </div>
+      </div>
       <div className="mt-8 flex flex-col-reverse gap-3 border-t border-navy-100 pt-6 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-navy-500">Required fields are marked when creating or updating the profile.</p><button type="submit" disabled={isSaving} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gold-500 px-5 py-3 text-sm font-bold text-navy-950 shadow-sm transition hover:bg-gold-400 disabled:cursor-not-allowed disabled:opacity-60"><Save size={16} />{isSaving ? 'Saving…' : profileId ? 'Save profile' : 'Create profile'}</button></div>
     </section></form>}
   </div>;

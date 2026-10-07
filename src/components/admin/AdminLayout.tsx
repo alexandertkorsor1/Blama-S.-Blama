@@ -18,6 +18,8 @@ import {
   Menu,
   X,
   ShieldCheck,
+  BookOpen,
+  Landmark,
 } from 'lucide-react';
 
 const navigationItems = [
@@ -27,7 +29,10 @@ const navigationItems = [
   { name: 'Experience', path: '/admin/experience', icon: Briefcase },
   { name: 'Achievements', path: '/admin/achievements', icon: Award },
   { name: 'Skills', path: '/admin/skills', icon: Layers },
+  { name: 'Leadership & PYPP', path: '/admin/leadership', icon: Landmark },
   { name: 'Articles', path: '/admin/articles', icon: FileText },
+  { name: 'Certificates Vault', path: '/admin/certificates', icon: ShieldCheck },
+  { name: 'CV & Document Hub', path: '/admin/documents', icon: BookOpen },
   { name: 'Gallery', path: '/admin/gallery', icon: ImageIcon },
   { name: 'Timeline', path: '/admin/timeline', icon: History },
   { name: 'Messages', path: '/admin/messages', icon: Mail },
@@ -190,7 +195,7 @@ export default function AdminLayout() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Desktop Top Header Bar */}
-        <header className="hidden lg:flex items-center justify-between bg-white border-b border-navy-200/80 px-8 py-4 shadow-2xs">
+        <header className="hidden lg:flex items-center justify-between bg-white border-b border-navy-200/80 px-8 py-4 shadow-xs">
           <div>
             <nav className="flex items-center gap-2 text-xs text-navy-500 mb-0.5">
               <span>Admin Portal</span>
@@ -212,7 +217,7 @@ export default function AdminLayout() {
               href="/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-lg border border-navy-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-navy-800 hover:border-gold-500 hover:text-gold-700 transition-colors shadow-2xs"
+              className="flex items-center gap-1.5 rounded-lg border border-navy-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-navy-800 hover:border-gold-500 hover:text-gold-700 transition-colors shadow-xs"
             >
               <ExternalLink size={13} />
               <span>View Public Site</span>

@@ -1,29 +1,38 @@
 export interface EducationItem {
+  id: string;
   institution: string;
   degree: string;
   field: string;
-  year: string | null;
+  year: string;
   status: 'Completed' | 'In Progress';
   description: string;
+  honors?: string;
+  location: string;
 }
 
 export const education: EducationItem[] = [
   {
-    institution: 'United Methodist University',
-    degree: 'Bachelor of Business Administration',
-    field: 'Management',
-    year: '2021',
-    status: 'Completed',
+    id: 'edu-law',
+    institution: 'Louis Arthur Grimes School of Law — University of Liberia',
+    degree: 'Bachelor of Laws (LL.B) Candidate',
+    field: 'Jurisprudence, Legal Research & Equal Justice',
+    year: 'Expected 2027',
+    status: 'In Progress',
+    location: 'Monrovia, Republic of Liberia',
+    honors: 'Premier Faculty of Law in Liberia',
     description:
-      'Undergraduate studies focused on organizational management, business strategy, and administrative leadership — establishing the professional foundation for a career bridging enterprise and public service.',
+      'Rigorous legal education focusing on constitutional law, statutory interpretation, commercial arbitration, civil procedure, and judicial doctrine. Scholar focusing on expanding equal protection, procedural fairness, and institutional integrity across Liberian legal and commercial ecosystems.',
   },
   {
-    institution: 'Louis Arthur Grimes School of Law',
-    degree: 'Legal Studies',
-    field: 'Law',
-    year: null,
-    status: 'In Progress',
+    id: 'edu-bba',
+    institution: 'United Methodist University (UMU)',
+    degree: 'Bachelor of Business Administration (BBA)',
+    field: 'Management & Organizational Strategy',
+    year: '2021',
+    status: 'Completed',
+    location: 'Monrovia, Republic of Liberia',
+    honors: 'Graduated with Academic Commendation in Management',
     description:
-      'Legal education at the Louis Arthur Grimes School of Law, the University of Liberia\'s faculty of law. Professional interests include legal research, equal justice, and the rule of law.',
+      'Comprehensive undergraduate curriculum covering strategic planning, financial management, operations analysis, human resources, and organizational governance — creating a solid analytical foundation for bridging private enterprise with public administration.',
   },
 ];
