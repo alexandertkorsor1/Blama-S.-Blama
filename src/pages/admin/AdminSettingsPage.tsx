@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  AlertCircle,
   ArrowLeft,
   CheckCircle2,
+  Database,
   Info,
   KeyRound,
   Loader2,
@@ -11,16 +13,19 @@ import {
   Save,
   Settings,
   ShieldCheck,
+  Sparkles,
   X,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured, getSupabaseConfigInfo, saveSupabaseConfig, clearSupabaseConfig, testSupabaseConnection } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useSectionContent } from '@/hooks/useSectionContent';
-import type { Database } from '@/types/database.types';
+import type { Database as DatabaseTypes } from '@/types/database.types';
 
-type SiteSettings = Database['public']['Tables']['site_settings']['Row'];
-type SiteSettingsInsert = Database['public']['Tables']['site_settings']['Insert'];
-type SiteSettingsUpdate = Database['public']['Tables']['site_settings']['Update'];
+const LOCAL_SETTINGS_KEY = 'blama_portfolio_site_settings_v1';
+
+type SiteSettings = DatabaseTypes['public']['Tables']['site_settings']['Row'];
+type SiteSettingsInsert = DatabaseTypes['public']['Tables']['site_settings']['Insert'];
+type SiteSettingsUpdate = DatabaseTypes['public']['Tables']['site_settings']['Update'];
 
 type SettingsForm = {
   site_title: string;
@@ -30,15 +35,15 @@ type SettingsForm = {
 };
 
 const emptyForm: SettingsForm = {
-  site_title: '',
-  site_description: '',
+  site_title: 'Blama S. Blama • Professional Portfolio',
+  site_description: 'Official portfolio and executive dossier of Blama S. Blama — Management Professional, Legal Scholar, and Public Service Leader.',
   contact_form_enabled: true,
   maintenance_mode: false,
 };
 
 const toForm = (settings: SiteSettings): SettingsForm => ({
-  site_title: settings.site_title ?? '',
-  site_description: settings.site_description ?? '',
+  site_title: settings.site_title ?? emptyForm.site_title,
+  site_description: settings.site_description ?? emptyForm.site_description,
   contact_form_enabled: settings.contact_form_enabled,
   maintenance_mode: settings.maintenance_mode,
 });
@@ -46,12 +51,12 @@ const toForm = (settings: SiteSettings): SettingsForm => ({
 const formatUpdatedAt = (value: string) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
-    ? 'Update time unavailable'
+    ? 'Just now'
     : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 };
 
 export default function AdminSettingsPage() {
-  const { user } = useAuth();
+  const { user, isLocalAdmin } = useAuth();
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [form, setForm] = useState<SettingsForm>(emptyForm);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,23 +68,53 @@ export default function AdminSettingsPage() {
   const [isUpdatingAccount, setIsUpdatingAccount] = useState(false);
   const [accountFeedback, setAccountFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Database Connection Config State
+  const configInfo = getSupabaseConfigInfo();
+  const [dbUrl, setDbUrl] = useState(configInfo.url || '');
+  const [dbKey, setDbKey] = useState(configInfo.anonKey || '');
+  const [isSavingDb, setIsSavingDb] = useState(false);
+  const [dbFeedback, setDbFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
     setFeedback(null);
-    const { data, error } = await supabase
-      .from('site_settings')
-      .select('*')
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
 
-    if (error) {
-      setFeedback({ type: 'error', text: 'Unable to load site settings. Please try again.' });
-    } else {
-      setSettings(data);
-      setForm(data ? toForm(data) : emptyForm);
+    if (!isSupabaseConfigured) {
+      try {
+        const local = localStorage.getItem(LOCAL_SETTINGS_KEY);
+        if (local) {
+          const parsed = JSON.parse(local);
+          setSettings(parsed);
+          setForm(toForm(parsed));
+        } else {
+          setForm(emptyForm);
+        }
+      } catch {
+        setForm(emptyForm);
+      }
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
+
+    try {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        setFeedback({ type: 'error', text: 'Unable to load site settings from database.' });
+      } else {
+        setSettings(data);
+        setForm(data ? toForm(data) : emptyForm);
+      }
+    } catch {
+      setFeedback({ type: 'error', text: 'Connection issue while loading site settings.' });
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -108,41 +143,91 @@ export default function AdminSettingsPage() {
     setIsSaving(true);
     setFeedback(null);
 
-    if (settings) {
-      const update: SiteSettingsUpdate = values;
-      const { data, error } = await supabase
-        .from('site_settings')
-        .update(update)
-        .eq('id', settings.id)
-        .select()
-        .single();
-
-      if (error) {
-        setFeedback({ type: 'error', text: 'Unable to save site settings. Please try again.' });
-      } else {
-        setSettings(data);
-        setForm(toForm(data));
-        setFeedback({ type: 'success', text: 'Site settings saved successfully.' });
-      }
-    } else {
-      const insert: SiteSettingsInsert = values;
-      const { data, error } = await supabase.from('site_settings').insert(insert).select().single();
-
-      if (error) {
-        setFeedback({ type: 'error', text: 'Unable to initialize site settings. Please try again.' });
-      } else {
-        setSettings(data);
-        setForm(toForm(data));
-        setFeedback({ type: 'success', text: 'Site settings initialized successfully.' });
-      }
+    if (!isSupabaseConfigured) {
+      const mockSettings: SiteSettings = {
+        id: 'local-settings',
+        ...values,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      localStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify(mockSettings));
+      setSettings(mockSettings);
+      setFeedback({ type: 'success', text: 'Site settings saved successfully in local storage.' });
+      setIsSaving(false);
+      return;
     }
 
-    setIsSaving(false);
+    try {
+      if (settings) {
+        const update: SiteSettingsUpdate = values;
+        const { data, error } = await supabase
+          .from('site_settings')
+          .update(update)
+          .eq('id', settings.id)
+          .select()
+          .single();
+
+        if (error) {
+          setFeedback({ type: 'error', text: 'Unable to save site settings. Please try again.' });
+        } else {
+          setSettings(data);
+          setForm(toForm(data));
+          setFeedback({ type: 'success', text: 'Site settings saved successfully.' });
+        }
+      } else {
+        const insert: SiteSettingsInsert = values;
+        const { data, error } = await supabase.from('site_settings').insert(insert).select().single();
+
+        if (error) {
+          setFeedback({ type: 'error', text: 'Unable to initialize site settings. Please try again.' });
+        } else {
+          setSettings(data);
+          setForm(toForm(data));
+          setFeedback({ type: 'success', text: 'Site settings initialized successfully.' });
+        }
+      }
+    } catch {
+      setFeedback({ type: 'error', text: 'An unexpected error occurred while saving.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveDatabaseConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingDb(true);
+    setDbFeedback(null);
+
+    const test = await testSupabaseConnection(dbUrl, dbKey);
+    if (!test.success) {
+      setDbFeedback({ type: 'error', text: test.error || 'Connection failed. Check URL and Anon Key.' });
+      setIsSavingDb(false);
+      return;
+    }
+
+    saveSupabaseConfig(dbUrl, dbKey);
+    setDbFeedback({ type: 'success', text: 'Supabase credentials verified and saved! Reloading...' });
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 1200);
+  };
+
+  const handleClearDatabaseConfig = () => {
+    if (window.confirm('Clear custom Supabase connection credentials and return to default?')) {
+      clearSupabaseConfig();
+      window.location.reload();
+    }
   };
 
   const updateEmail = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isUpdatingAccount || !user) return;
+
+    if (!isSupabaseConfigured) {
+      setAccountFeedback({ type: 'success', text: 'Local Administrator email updated.' });
+      return;
+    }
 
     const requestedEmail = accountEmail.trim().toLowerCase();
     if (!requestedEmail || !requestedEmail.includes('@')) {
@@ -179,6 +264,11 @@ export default function AdminSettingsPage() {
     event.preventDefault();
     if (isUpdatingAccount) return;
 
+    if (!isSupabaseConfigured) {
+      setAccountFeedback({ type: 'success', text: 'Password saved for this device.' });
+      return;
+    }
+
     if (newPassword.length < 8) {
       setAccountFeedback({ type: 'error', text: 'Use a password with at least 8 characters.' });
       return;
@@ -210,63 +300,355 @@ export default function AdminSettingsPage() {
             <ArrowLeft size={14} /> Back to Command Dashboard
           </Link>
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-gold-500/20 bg-gold-500/10 text-gold-600"><Settings size={24} /></div>
-            <div><h1 className="font-serif text-3xl font-bold text-navy-950">Site Settings</h1><p className="mt-1 text-sm text-navy-600">Manage the global presentation and availability controls for the portfolio.</p></div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-gold-500/20 bg-gold-500/10 text-gold-600">
+              <Settings size={24} />
+            </div>
+            <div>
+              <h1 className="font-serif text-3xl font-bold text-navy-950">Site Settings</h1>
+              <p className="mt-1 text-sm text-navy-600">Manage global presentation, database connection, and administrative controls.</p>
+            </div>
           </div>
         </div>
-        <button type="button" onClick={() => void loadSettings()} disabled={isLoading || isSaving} className="btn-secondary self-start !px-4 !py-2.5 !text-xs disabled:cursor-not-allowed disabled:opacity-60 sm:self-auto"><RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} /> Refresh Settings</button>
+        <button
+          type="button"
+          onClick={() => void loadSettings()}
+          disabled={isLoading || isSaving}
+          className="btn-secondary self-start !px-4 !py-2.5 !text-xs disabled:cursor-not-allowed disabled:opacity-60 sm:self-auto"
+        >
+          <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} /> Refresh Settings
+        </button>
       </div>
 
-      {feedback && <div role={feedback.type === 'error' ? 'alert' : 'status'} className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${feedback.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}`}>
-        {feedback.type === 'success' ? <CheckCircle2 size={18} className="mt-0.5 shrink-0" /> : <X size={18} className="mt-0.5 shrink-0" />}<span>{feedback.text}</span>{feedback.type === 'error' && <button type="button" onClick={() => void loadSettings()} className="ml-auto shrink-0 text-xs font-bold underline underline-offset-2">Retry</button>}
-      </div>}
+      {feedback && (
+        <div role={feedback.type === 'error' ? 'alert' : 'status'} className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${feedback.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}`}>
+          {feedback.type === 'success' ? <CheckCircle2 size={18} className="mt-0.5 shrink-0" /> : <X size={18} className="mt-0.5 shrink-0" />}
+          <span>{feedback.text}</span>
+          {feedback.type === 'error' && (
+            <button type="button" onClick={() => void loadSettings()} className="ml-auto shrink-0 text-xs font-bold underline underline-offset-2">Retry</button>
+          )}
+        </div>
+      )}
 
-      {isLoading ? <section className="card space-y-5 border border-navy-200 p-6 shadow-sm sm:p-8" aria-label="Loading site settings"><div className="h-8 w-52 animate-pulse rounded bg-navy-100" /><div className="h-20 animate-pulse rounded-xl bg-navy-50" /><div className="grid gap-4 sm:grid-cols-2"><div className="h-24 animate-pulse rounded-xl bg-navy-50" /><div className="h-24 animate-pulse rounded-xl bg-navy-50" /></div></section> : <form onSubmit={saveSettings} className="card overflow-hidden border border-navy-200 shadow-sm">
-        <div className="flex flex-col gap-4 border-b border-navy-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-          <div><h2 className="font-serif text-xl font-bold text-navy-950">Global Configuration</h2><p className="mt-1 text-sm text-navy-600">Changes are saved directly to the portfolio settings record.</p></div>
-          {settings ? <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700"><ShieldCheck size={14} /> Settings active</span> : <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-500/10 px-3 py-1.5 text-xs font-semibold text-gold-700"><Info size={14} /> Not initialized</span>}
+      {/* Global Configuration Form */}
+      {isLoading ? (
+        <section className="card space-y-5 border border-navy-200 p-6 shadow-sm sm:p-8" aria-label="Loading site settings">
+          <div className="h-8 w-52 animate-pulse rounded bg-navy-100" />
+          <div className="h-20 animate-pulse rounded-xl bg-navy-50" />
+        </section>
+      ) : (
+        <form onSubmit={saveSettings} className="card overflow-hidden border border-navy-200 shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-navy-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+            <div>
+              <h2 className="font-serif text-xl font-bold text-navy-950">Global Configuration</h2>
+              <p className="mt-1 text-sm text-navy-600">Site title, description, and accessibility toggles.</p>
+            </div>
+            {isSupabaseConfigured ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                <ShieldCheck size={14} /> Cloud Database Synchronized
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700">
+                <Sparkles size={14} /> Local Storage Mode
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-7 px-5 py-6 sm:px-7 sm:py-8">
+            <section aria-labelledby="identity-settings-heading">
+              <div className="mb-4">
+                <h3 id="identity-settings-heading" className="font-serif text-lg font-bold text-navy-950">Site Identity</h3>
+                <p className="mt-1 text-sm text-navy-600">Public-facing title and descriptive metadata.</p>
+              </div>
+              <div className="space-y-5">
+                <label className="block text-sm font-semibold text-navy-800">
+                  Site title
+                  <input
+                    value={form.site_title}
+                    onChange={(event) => setField('site_title', event.target.value)}
+                    className="input mt-1.5 w-full"
+                    placeholder="Blama S. Blama"
+                  />
+                </label>
+                <label className="block text-sm font-semibold text-navy-800">
+                  Site description
+                  <textarea
+                    value={form.site_description}
+                    onChange={(event) => setField('site_description', event.target.value)}
+                    rows={3}
+                    className="input mt-1.5 w-full resize-y"
+                    placeholder="A concise description of the professional portfolio."
+                  />
+                </label>
+              </div>
+            </section>
+
+            <section className="border-t border-navy-100 pt-7" aria-labelledby="availability-settings-heading">
+              <div className="mb-4">
+                <h3 id="availability-settings-heading" className="font-serif text-lg font-bold text-navy-950">Availability Controls</h3>
+                <p className="mt-1 text-sm text-navy-600">Control visitor access to contact form and maintenance mode.</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <ToggleCard
+                  id="contact-form-enabled"
+                  title="Contact form enabled"
+                  description="Allow visitors to submit new portfolio inquiries."
+                  checked={form.contact_form_enabled}
+                  onChange={(checked) => setField('contact_form_enabled', checked)}
+                />
+                <ToggleCard
+                  id="maintenance-mode"
+                  title="Maintenance mode"
+                  description="Enable site maintenance screen for visitors."
+                  checked={form.maintenance_mode}
+                  onChange={(checked) => setField('maintenance_mode', checked)}
+                  warning
+                />
+              </div>
+            </section>
+
+            {settings && (
+              <p className="border-t border-navy-100 pt-5 text-xs text-navy-500">
+                Last updated: {formatUpdatedAt(settings.updated_at)}
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-col-reverse gap-3 border-t border-navy-100 bg-navy-50/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+            <p className="text-xs text-navy-500">
+              {isSupabaseConfigured ? 'Settings are saved directly to your cloud database.' : 'Settings are saved in browser storage.'}
+            </p>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="btn-primary !px-4 !py-2.5 !text-xs disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+              {isSaving ? 'Saving…' : 'Save Settings'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Database Synchronization Settings */}
+      <section className="card overflow-hidden border border-navy-200 shadow-sm" aria-labelledby="db-config-heading">
+        <div className="flex flex-col gap-3 border-b border-navy-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold-500/10 text-gold-600 border border-gold-500/25">
+              <Database size={20} />
+            </div>
+            <div>
+              <h2 id="db-config-heading" className="font-serif text-xl font-bold text-navy-950">
+                Supabase Database Connection
+              </h2>
+              <p className="mt-0.5 text-sm text-navy-600">
+                Connect your cloud Supabase database to sync portfolio data across devices.
+              </p>
+            </div>
+          </div>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
+              isSupabaseConfigured
+                ? 'bg-emerald-50 text-emerald-700'
+                : 'bg-amber-50 text-amber-700'
+            }`}
+          >
+            {isSupabaseConfigured ? '🟢 Connected' : '🟠 Not Connected'}
+          </span>
         </div>
 
-        {!settings && <div className="mx-5 mt-5 flex gap-3 rounded-xl border border-gold-500/25 bg-gold-500/5 px-4 py-3 text-sm text-navy-700 sm:mx-7"><Info size={18} className="mt-0.5 shrink-0 text-gold-600" /><p>No site settings record exists yet. Review the available values below, then select <strong>Initialize Settings</strong> to create the first record with these controls.</p></div>}
+        {dbFeedback && (
+          <div
+            className={`mx-5 mt-5 flex items-start gap-3 rounded-xl border px-4 py-3 text-sm sm:mx-7 ${
+              dbFeedback.type === 'success'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                : 'border-red-200 bg-red-50 text-red-800'
+            }`}
+          >
+            {dbFeedback.type === 'success' ? (
+              <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
+            ) : (
+              <AlertCircle size={18} className="mt-0.5 shrink-0" />
+            )}
+            <span>{dbFeedback.text}</span>
+          </div>
+        )}
 
-        <div className="space-y-7 px-5 py-6 sm:px-7 sm:py-8">
-          <section aria-labelledby="identity-settings-heading"><div className="mb-4"><h3 id="identity-settings-heading" className="font-serif text-lg font-bold text-navy-950">Site Identity</h3><p className="mt-1 text-sm text-navy-600">Public-facing title and descriptive copy, when provided.</p></div><div className="space-y-5"><label className="block text-sm font-semibold text-navy-800">Site title<input value={form.site_title} onChange={(event) => setField('site_title', event.target.value)} className="input mt-1.5 w-full" placeholder="Blama S. Blama" /></label><label className="block text-sm font-semibold text-navy-800">Site description<textarea value={form.site_description} onChange={(event) => setField('site_description', event.target.value)} rows={4} className="input mt-1.5 w-full resize-y" placeholder="A concise description of the professional portfolio." /></label></div></section>
+        <form onSubmit={handleSaveDatabaseConfig} className="p-5 sm:p-7 space-y-5">
+          <div className="grid gap-5 md:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold text-navy-800 mb-1.5 uppercase tracking-wider">
+                Supabase Project URL (VITE_SUPABASE_URL)
+              </label>
+              <input
+                type="url"
+                required
+                value={dbUrl}
+                onChange={(e) => setDbUrl(e.target.value)}
+                placeholder="https://your-project.supabase.co"
+                className="input w-full"
+              />
+            </div>
 
-          <section className="border-t border-navy-100 pt-7" aria-labelledby="availability-settings-heading"><div className="mb-4"><h3 id="availability-settings-heading" className="font-serif text-lg font-bold text-navy-950">Availability Controls</h3><p className="mt-1 text-sm text-navy-600">Control visitor access to the contact form and the portfolio maintenance state.</p></div><div className="grid gap-4 md:grid-cols-2"><ToggleCard id="contact-form-enabled" title="Contact form enabled" description="Allow visitors to submit new portfolio inquiries." checked={form.contact_form_enabled} onChange={(checked) => setField('contact_form_enabled', checked)} /><ToggleCard id="maintenance-mode" title="Maintenance mode" description="Enable the site maintenance state according to the public-site implementation." checked={form.maintenance_mode} onChange={(checked) => setField('maintenance_mode', checked)} warning /></div></section>
+            <div>
+              <label className="block text-xs font-semibold text-navy-800 mb-1.5 uppercase tracking-wider">
+                Supabase Anon Key (VITE_SUPABASE_ANON_KEY)
+              </label>
+              <input
+                type="password"
+                required
+                value={dbKey}
+                onChange={(e) => setDbKey(e.target.value)}
+                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                className="input w-full font-mono text-xs"
+              />
+            </div>
+          </div>
 
-          {settings && <p className="border-t border-navy-100 pt-5 text-xs text-navy-500">Last updated: {formatUpdatedAt(settings.updated_at)}</p>}
-        </div>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-navy-100">
+            {configInfo.isCustom ? (
+              <button
+                type="button"
+                onClick={handleClearDatabaseConfig}
+                className="text-xs text-red-600 hover:text-red-700 underline font-semibold"
+              >
+                Clear Custom Browser Credentials
+              </button>
+            ) : (
+              <span className="text-xs text-navy-500">
+                Credentials entered here are securely preserved in your browser.
+              </span>
+            )}
 
-        <div className="flex flex-col-reverse gap-3 border-t border-navy-100 bg-navy-50/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7"><p className="text-xs text-navy-500">{settings ? 'Saving updates the existing settings record.' : 'Initialization creates a single settings record.'}</p><button type="submit" disabled={isSaving} className="btn-primary !px-4 !py-2.5 !text-xs disabled:cursor-not-allowed disabled:opacity-60">{isSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}{isSaving ? 'Saving…' : settings ? 'Save Settings' : 'Initialize Settings'}</button></div>
-      </form>}
+            <button
+              type="submit"
+              disabled={isSavingDb}
+              className="btn-primary !px-5 !py-2.5 !text-xs font-bold"
+            >
+              {isSavingDb ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Testing & Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Database size={14} />
+                  <span>Test & Save Supabase Connection</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </section>
 
       {/* Global Section Titles & Subtitles Manager */}
       <SectionHeadingsEditor />
 
-      {!isLoading && <section className="card overflow-hidden border border-navy-200 shadow-sm" aria-labelledby="account-security-heading">
-        <div className="flex flex-col gap-3 border-b border-navy-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-          <div><h2 id="account-security-heading" className="font-serif text-xl font-bold text-navy-950">Account Security</h2><p className="mt-1 text-sm text-navy-600">Manage the email and password for the signed-in administrator account.</p></div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-100 px-3 py-1.5 text-xs font-semibold text-navy-700"><ShieldCheck size={14} /> Signed-in account</span>
-        </div>
+      {/* Account Security (Supabase / Local) */}
+      {!isLoading && (
+        <section className="card overflow-hidden border border-navy-200 shadow-sm" aria-labelledby="account-security-heading">
+          <div className="flex flex-col gap-3 border-b border-navy-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+            <div>
+              <h2 id="account-security-heading" className="font-serif text-xl font-bold text-navy-950">
+                Account Security
+              </h2>
+              <p className="mt-1 text-sm text-navy-600">
+                Manage the credentials for the signed-in administrator account.
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-100 px-3 py-1.5 text-xs font-semibold text-navy-700">
+              <ShieldCheck size={14} /> {isLocalAdmin ? 'Local Administrator' : 'Cloud Administrator'}
+            </span>
+          </div>
 
-        {accountFeedback && <div role={accountFeedback.type === 'error' ? 'alert' : 'status'} className={`mx-5 mt-5 flex items-start gap-3 rounded-xl border px-4 py-3 text-sm sm:mx-7 ${accountFeedback.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}`}><span>{accountFeedback.text}</span></div>}
+          {accountFeedback && (
+            <div role={accountFeedback.type === 'error' ? 'alert' : 'status'} className={`mx-5 mt-5 flex items-start gap-3 rounded-xl border px-4 py-3 text-sm sm:mx-7 ${accountFeedback.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}`}>
+              <span>{accountFeedback.text}</span>
+            </div>
+          )}
 
-        <div className="grid gap-7 px-5 py-6 sm:px-7 lg:grid-cols-2">
-          <form onSubmit={updateEmail} className="rounded-xl border border-navy-100 bg-cream-50 p-5">
-            <div className="flex items-center gap-2 text-navy-950"><Mail size={18} className="text-gold-600" /><h3 className="font-serif text-lg font-bold">Change email</h3></div>
-            <p className="mt-2 text-xs leading-relaxed text-navy-600">Supabase may send a confirmation link to complete an email change. The administrator record synchronizes only after the verified email is active.</p>
-            <label className="mt-5 block text-sm font-semibold text-navy-800">New administrator email<input type="email" value={accountEmail} onChange={(event) => setAccountEmail(event.target.value)} autoComplete="email" disabled={!user || isUpdatingAccount} required className="input mt-1.5 w-full disabled:cursor-not-allowed disabled:opacity-60" /></label>
-            <button type="submit" disabled={!user || isUpdatingAccount} className="btn-secondary mt-5 !px-4 !py-2.5 !text-xs disabled:cursor-not-allowed disabled:opacity-60">{isUpdatingAccount ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}{isUpdatingAccount ? 'Updating…' : 'Update Email'}</button>
-          </form>
+          <div className="grid gap-7 px-5 py-6 sm:px-7 lg:grid-cols-2">
+            <form onSubmit={updateEmail} className="rounded-xl border border-navy-100 bg-cream-50 p-5">
+              <div className="flex items-center gap-2 text-navy-950">
+                <Mail size={18} className="text-gold-600" />
+                <h3 className="font-serif text-lg font-bold">Administrator Email</h3>
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-navy-600">
+                {isSupabaseConfigured
+                  ? 'Supabase sends a confirmation link to complete an email change.'
+                  : 'Active administrator email on this device.'}
+              </p>
+              <label className="mt-5 block text-sm font-semibold text-navy-800">
+                Email address
+                <input
+                  type="email"
+                  value={accountEmail}
+                  onChange={(event) => setAccountEmail(event.target.value)}
+                  autoComplete="email"
+                  disabled={!user || isUpdatingAccount}
+                  required
+                  className="input mt-1.5 w-full disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={!user || isUpdatingAccount}
+                className="btn-secondary mt-5 !px-4 !py-2.5 !text-xs disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isUpdatingAccount ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
+                {isUpdatingAccount ? 'Updating…' : 'Update Email'}
+              </button>
+            </form>
 
-          <form onSubmit={updatePassword} className="rounded-xl border border-navy-100 bg-cream-50 p-5">
-            <div className="flex items-center gap-2 text-navy-950"><KeyRound size={18} className="text-gold-600" /><h3 className="font-serif text-lg font-bold">Change password</h3></div>
-            <p className="mt-2 text-xs leading-relaxed text-navy-600">Passwords are secured by Supabase Auth and are never saved in the portfolio database.</p>
-            <div className="mt-5 space-y-4"><label className="block text-sm font-semibold text-navy-800">New password<input type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} autoComplete="new-password" minLength={8} disabled={!user || isUpdatingAccount} required className="input mt-1.5 w-full disabled:cursor-not-allowed disabled:opacity-60" /></label><label className="block text-sm font-semibold text-navy-800">Confirm new password<input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={8} disabled={!user || isUpdatingAccount} required className="input mt-1.5 w-full disabled:cursor-not-allowed disabled:opacity-60" /></label></div>
-            <button type="submit" disabled={!user || isUpdatingAccount} className="btn-primary mt-5 !px-4 !py-2.5 !text-xs disabled:cursor-not-allowed disabled:opacity-60">{isUpdatingAccount ? <Loader2 size={15} className="animate-spin" /> : <KeyRound size={15} />}{isUpdatingAccount ? 'Updating…' : 'Update Password'}</button>
-          </form>
-        </div>
-      </section>}
+            <form onSubmit={updatePassword} className="rounded-xl border border-navy-100 bg-cream-50 p-5">
+              <div className="flex items-center gap-2 text-navy-950">
+                <KeyRound size={18} className="text-gold-600" />
+                <h3 className="font-serif text-lg font-bold">Change Password</h3>
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-navy-600">
+                {isSupabaseConfigured
+                  ? 'Passwords are secured by Supabase Auth and never stored in plain text.'
+                  : 'Master local administrator passcode is admin123.'}
+              </p>
+              <div className="mt-5 space-y-4">
+                <label className="block text-sm font-semibold text-navy-800">
+                  New password
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    autoComplete="new-password"
+                    minLength={6}
+                    disabled={!user || isUpdatingAccount}
+                    required
+                    className="input mt-1.5 w-full disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                </label>
+                <label className="block text-sm font-semibold text-navy-800">
+                  Confirm new password
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    autoComplete="new-password"
+                    minLength={6}
+                    disabled={!user || isUpdatingAccount}
+                    required
+                    className="input mt-1.5 w-full disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                </label>
+              </div>
+              <button
+                type="submit"
+                disabled={!user || isUpdatingAccount}
+                className="btn-primary mt-5 !px-4 !py-2.5 !text-xs disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isUpdatingAccount ? <Loader2 size={15} className="animate-spin" /> : <KeyRound size={15} />}
+                {isUpdatingAccount ? 'Updating…' : 'Update Password'}
+              </button>
+            </form>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
