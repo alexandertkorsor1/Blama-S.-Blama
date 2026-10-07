@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import PublicPortfolioPage from '@/pages/PublicPortfolioPage';
 import AdminLoginPage from '@/pages/admin/AdminLoginPage';
@@ -19,7 +19,7 @@ import AdminSettingsPage from '@/pages/admin/AdminSettingsPage';
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           {/* Public Portfolio Website */}
           <Route path="/" element={<PublicPortfolioPage />} />
@@ -47,7 +47,7 @@ function App() {
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </AuthProvider>
   );
 }
