@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  AlertCircle,
   ArrowLeft,
   CheckCircle2,
-  Database,
-  Info,
   KeyRound,
   Loader2,
   Mail,
@@ -16,7 +13,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import { supabase, isSupabaseConfigured, getSupabaseConfigInfo, saveSupabaseConfig, clearSupabaseConfig, testSupabaseConnection } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useSectionContent } from '@/hooks/useSectionContent';
 import type { Database as DatabaseTypes } from '@/types/database.types';
@@ -67,13 +64,6 @@ export default function AdminSettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdatingAccount, setIsUpdatingAccount] = useState(false);
   const [accountFeedback, setAccountFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  // Database Connection Config State
-  const configInfo = getSupabaseConfigInfo();
-  const [dbUrl, setDbUrl] = useState(configInfo.url || '');
-  const [dbKey, setDbKey] = useState(configInfo.anonKey || '');
-  const [isSavingDb, setIsSavingDb] = useState(false);
-  const [dbFeedback, setDbFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
@@ -193,33 +183,6 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const handleSaveDatabaseConfig = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSavingDb(true);
-    setDbFeedback(null);
-
-    const test = await testSupabaseConnection(dbUrl, dbKey);
-    if (!test.success) {
-      setDbFeedback({ type: 'error', text: test.error || 'Connection failed. Check URL and Anon Key.' });
-      setIsSavingDb(false);
-      return;
-    }
-
-    saveSupabaseConfig(dbUrl, dbKey);
-    setDbFeedback({ type: 'success', text: 'Supabase credentials verified and saved! Reloading...' });
-
-    setTimeout(() => {
-      window.location.reload();
-    }, 1200);
-  };
-
-  const handleClearDatabaseConfig = () => {
-    if (window.confirm('Clear custom Supabase connection credentials and return to default?')) {
-      clearSupabaseConfig();
-      window.location.reload();
-    }
-  };
-
   const updateEmail = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isUpdatingAccount || !user) return;
@@ -305,7 +268,7 @@ export default function AdminSettingsPage() {
             </div>
             <div>
               <h1 className="font-serif text-3xl font-bold text-navy-950">Site Settings</h1>
-              <p className="mt-1 text-sm text-navy-600">Manage global presentation, database connection, and administrative controls.</p>
+              <p className="mt-1 text-sm text-navy-600">Manage global presentation, site metadata, and administrative controls.</p>
             </div>
           </div>
         </div>
@@ -428,117 +391,6 @@ export default function AdminSettingsPage() {
           </div>
         </form>
       )}
-
-      {/* Database Synchronization Settings */}
-      <section className="card overflow-hidden border border-navy-200 shadow-sm" aria-labelledby="db-config-heading">
-        <div className="flex flex-col gap-3 border-b border-navy-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold-500/10 text-gold-600 border border-gold-500/25">
-              <Database size={20} />
-            </div>
-            <div>
-              <h2 id="db-config-heading" className="font-serif text-xl font-bold text-navy-950">
-                Supabase Database Connection
-              </h2>
-              <p className="mt-0.5 text-sm text-navy-600">
-                Connect your cloud Supabase database to sync portfolio data across devices.
-              </p>
-            </div>
-          </div>
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
-              isSupabaseConfigured
-                ? 'bg-emerald-50 text-emerald-700'
-                : 'bg-amber-50 text-amber-700'
-            }`}
-          >
-            {isSupabaseConfigured ? '🟢 Connected' : '🟠 Not Connected'}
-          </span>
-        </div>
-
-        {dbFeedback && (
-          <div
-            className={`mx-5 mt-5 flex items-start gap-3 rounded-xl border px-4 py-3 text-sm sm:mx-7 ${
-              dbFeedback.type === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                : 'border-red-200 bg-red-50 text-red-800'
-            }`}
-          >
-            {dbFeedback.type === 'success' ? (
-              <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
-            ) : (
-              <AlertCircle size={18} className="mt-0.5 shrink-0" />
-            )}
-            <span>{dbFeedback.text}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSaveDatabaseConfig} className="p-5 sm:p-7 space-y-5">
-          <div className="grid gap-5 md:grid-cols-2">
-            <div>
-              <label className="block text-xs font-semibold text-navy-800 mb-1.5 uppercase tracking-wider">
-                Supabase Project URL (VITE_SUPABASE_URL)
-              </label>
-              <input
-                type="url"
-                required
-                value={dbUrl}
-                onChange={(e) => setDbUrl(e.target.value)}
-                placeholder="https://your-project.supabase.co"
-                className="input w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-navy-800 mb-1.5 uppercase tracking-wider">
-                Supabase Anon Key (VITE_SUPABASE_ANON_KEY)
-              </label>
-              <input
-                type="password"
-                required
-                value={dbKey}
-                onChange={(e) => setDbKey(e.target.value)}
-                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                className="input w-full font-mono text-xs"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-navy-100">
-            {configInfo.isCustom ? (
-              <button
-                type="button"
-                onClick={handleClearDatabaseConfig}
-                className="text-xs text-red-600 hover:text-red-700 underline font-semibold"
-              >
-                Clear Custom Browser Credentials
-              </button>
-            ) : (
-              <span className="text-xs text-navy-500">
-                Credentials entered here are securely preserved in your browser.
-              </span>
-            )}
-
-            <button
-              type="submit"
-              disabled={isSavingDb}
-              className="btn-primary !px-5 !py-2.5 !text-xs font-bold"
-            >
-              {isSavingDb ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  <span>Testing & Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Database size={14} />
-                  <span>Test & Save Supabase Connection</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </section>
 
       {/* Global Section Titles & Subtitles Manager */}
       <SectionHeadingsEditor />

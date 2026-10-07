@@ -5,7 +5,6 @@ import {
   BookOpen,
   Briefcase,
   CheckCircle2,
-  Database,
   FileText,
   GraduationCap,
   History,
@@ -18,13 +17,9 @@ import {
   ShieldCheck,
   Sparkles,
   UserCheck,
-  X,
-  AlertCircle,
-  Loader2,
-  ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase, isSupabaseConfigured, getSupabaseConfigInfo, saveSupabaseConfig, testSupabaseConnection } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { certificates as initialCertificates } from '@/data/certificates';
 import { initialHubDocuments } from '@/data/documents';
 import { education as staticEducation } from '@/data/education';
@@ -83,18 +78,10 @@ const actions = [
 ] as const;
 
 export default function AdminDashboardPage() {
-  const { user, isLocalAdmin } = useAuth();
+  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>(emptyStats);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  // Database Connection Modal
-  const [isDbModalOpen, setIsDbModalOpen] = useState(false);
-  const configInfo = getSupabaseConfigInfo();
-  const [configUrl, setConfigUrl] = useState(configInfo.url || '');
-  const [configKey, setConfigKey] = useState(configInfo.anonKey || '');
-  const [isTestingConfig, setIsTestingConfig] = useState(false);
-  const [configTestResult, setConfigTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const loadStats = useCallback(async () => {
     setIsLoading(true);
@@ -181,7 +168,6 @@ export default function AdminDashboardPage() {
         documents: docCount,
       });
     } catch {
-      // Graceful fallback to static counts
       setStats({
         education: staticEducation.length,
         experiences: staticExperiences.length,
@@ -202,29 +188,6 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     void loadStats();
   }, [loadStats]);
-
-  const handleTestAndSaveConfig = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsTestingConfig(true);
-    setConfigTestResult(null);
-
-    const test = await testSupabaseConnection(configUrl, configKey);
-    if (!test.success) {
-      setConfigTestResult({ success: false, message: test.error || 'Connection failed.' });
-      setIsTestingConfig(false);
-      return;
-    }
-
-    saveSupabaseConfig(configUrl, configKey);
-    setConfigTestResult({
-      success: true,
-      message: 'Connection verified! Reloading with your Supabase database...',
-    });
-
-    setTimeout(() => {
-      window.location.reload();
-    }, 1200);
-  };
 
   const cards = [
     ['Document Hub', stats.documents, 'CV & policy briefs in hub', '/admin/documents', BookOpen, 'bg-emerald-50 text-emerald-800'],
@@ -257,61 +220,16 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <div className="rounded-2xl border border-navy-700 bg-navy-950/60 px-4 py-3">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-navy-400">
-                    Signed in as {isLocalAdmin ? '(Local Admin)' : ''}
-                  </p>
-                  <p className="mt-0.5 max-w-[220px] truncate text-xs font-semibold text-white">
-                    {user?.email ?? 'admin@blamasblama.com'}
-                  </p>
-                </div>
-                <span
-                  className={`h-2.5 w-2.5 rounded-full shrink-0 ${
-                    isSupabaseConfigured ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
-                  }`}
-                  title={isSupabaseConfigured ? 'Supabase Connected' : 'Local Storage Mode'}
-                />
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsDbModalOpen(true)}
-              className="rounded-2xl border border-gold-500/40 bg-gold-500/10 hover:bg-gold-500/20 px-4 py-3 text-xs font-semibold text-gold-300 transition-colors flex items-center gap-2 shrink-0"
-            >
-              <Database size={15} />
-              <span>{isSupabaseConfigured ? 'DB Sync: Active' : 'Connect Supabase'}</span>
-            </button>
+          <div className="rounded-2xl border border-navy-700 bg-navy-950/60 px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-navy-400">
+              Signed in as
+            </p>
+            <p className="mt-0.5 max-w-[240px] truncate text-xs font-semibold text-white">
+              {user?.email ?? 'admin@blamasblama.com'}
+            </p>
           </div>
         </div>
       </section>
-
-      {/* Local Storage Mode Information Notice (if Supabase is not connected) */}
-      {!isSupabaseConfigured && (
-        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-          <div className="flex items-start gap-3">
-            <Sparkles size={18} className="text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold text-amber-950">
-                Running in Local Administrative Storage Mode
-              </p>
-              <p className="mt-0.5 text-amber-800">
-                All certificate uploads, document attachments, and section customizer edits are saved directly in your browser. To synchronize across multiple devices, connect a Supabase database.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsDbModalOpen(true)}
-            className="btn-gold !py-2 !px-4 !text-xs font-bold shrink-0 self-start sm:self-auto"
-          >
-            <Database size={14} /> Connect Supabase
-          </button>
-        </div>
-      )}
 
       {/* Overview */}
       <section aria-labelledby="overview">
@@ -322,7 +240,7 @@ export default function AdminDashboardPage() {
               Content at a glance
             </h2>
             <p className="mt-1 text-sm text-navy-600">
-              {isSupabaseConfigured ? 'Live totals from the portfolio database.' : 'Total records active in the portfolio system.'}
+              Live totals from the portfolio system.
             </p>
           </div>
           <button
@@ -396,119 +314,6 @@ export default function AdminDashboardPage() {
           ))}
         </div>
       </section>
-
-      {/* Database Setup Modal */}
-      {isDbModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm animate-fadeIn">
-          <div className="relative w-full max-w-lg rounded-2xl border border-navy-700 bg-navy-900 p-6 sm:p-7 shadow-2xl text-white">
-            <div className="flex items-center justify-between border-b border-navy-800 pb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold-500/10 text-gold-400 border border-gold-500/30">
-                  <Database size={20} />
-                </div>
-                <div>
-                  <h3 className="font-serif text-lg font-bold">Supabase Database Connection</h3>
-                  <p className="text-xs text-navy-400">Configure or update live database synchronization</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsDbModalOpen(false)}
-                className="rounded-lg p-1 text-navy-400 hover:bg-navy-800 hover:text-white"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="mt-4 space-y-4 text-xs text-navy-300 leading-relaxed">
-              <p>
-                Connect your Supabase project to enable cloud database storage and multi-admin collaboration across all devices.
-              </p>
-
-              {configTestResult && (
-                <div
-                  className={`flex items-start gap-2.5 rounded-xl border p-3.5 ${
-                    configTestResult.success
-                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
-                      : 'border-red-500/30 bg-red-500/10 text-red-200'
-                  }`}
-                >
-                  {configTestResult.success ? (
-                    <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                  ) : (
-                    <AlertCircle size={16} className="text-red-400 shrink-0 mt-0.5" />
-                  )}
-                  <span>{configTestResult.message}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleTestAndSaveConfig} className="space-y-4 pt-2">
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-navy-200 mb-1">
-                    Supabase Project URL
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    placeholder="https://your-project.supabase.co"
-                    value={configUrl}
-                    onChange={(e) => setConfigUrl(e.target.value)}
-                    className="w-full rounded-xl border border-navy-700 bg-navy-950 px-3.5 py-2.5 text-xs text-white placeholder-navy-500 focus:border-gold-500 focus:outline-none focus:ring-1 focus:ring-gold-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-navy-200 mb-1">
-                    Supabase Anon Public API Key
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                    value={configKey}
-                    onChange={(e) => setConfigKey(e.target.value)}
-                    className="w-full rounded-xl border border-navy-700 bg-navy-950 px-3.5 py-2.5 text-xs text-white placeholder-navy-500 focus:border-gold-500 focus:outline-none focus:ring-1 focus:ring-gold-500 font-mono"
-                  />
-                </div>
-
-                <div className="rounded-xl border border-navy-800 bg-navy-950/60 p-3 text-[11px] text-navy-400">
-                  <p className="font-semibold text-navy-300">Finding your credentials:</p>
-                  <p className="mt-1">
-                    In your Supabase project dashboard, visit <strong>Project Settings → API</strong>.
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsDbModalOpen(false)}
-                    className="rounded-xl border border-navy-700 bg-navy-800 px-4 py-2 text-xs font-semibold text-white hover:bg-navy-700 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isTestingConfig}
-                    className="btn-primary !py-2 !px-5 !text-xs font-bold"
-                  >
-                    {isTestingConfig ? (
-                      <>
-                        <Loader2 size={14} className="animate-spin" />
-                        <span>Testing & Connecting...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Database size={14} />
-                        <span>Save & Connect</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
