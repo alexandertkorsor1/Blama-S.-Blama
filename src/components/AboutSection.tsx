@@ -36,7 +36,7 @@ const aboutPillars: PillarDetail[] = [
     badge: 'BBA in Management (2021)',
     summary:
       'A Bachelor of Business Administration in Management from United Methodist University, with hands-on experience in operations and administration.',
-    image: '/gallery/blama-formal-suit.jpg',
+    image: `${import.meta.env.BASE_URL}gallery/blama-formal-suit.jpg`,
     detailedText: [
       'Blama earned his Bachelor of Business Administration (BBA) in Management from United Methodist University in 2021, establishing a rigorous grounding in organizational theory, strategic planning, and administrative oversight.',
       'His practical background spans commercial operations and community initiatives — serving as Operations Manager at Fassah Business Center where he streamlined daily workflows, client services, and administrative controls, and as Administrative Assistant at Block 3-Self Help Community Initiative.',
@@ -65,7 +65,7 @@ const aboutPillars: PillarDetail[] = [
     badge: 'PYPP Class XI Fellow',
     summary:
       'Professional placement at the Ministry of National Defense through the President\'s Young Professionals Program, gaining direct exposure to national governance.',
-    image: '/gallery/blama-judiciary-sinoe-county.png',
+    image: `${import.meta.env.BASE_URL}gallery/blama-judiciary-sinoe-county.png`,
     detailedText: [
       'Selected into Class XI of the prestigious President\'s Young Professionals Program (PYPP), Blama was placed at the Ministry of National Defense, Republic of Liberia, gaining firsthand insight into high-level state administration.',
       'Through the fellowship, he underwent intensive mentorship, ethics, and governance training designed to build Liberia\'s next generation of civil-service leaders.',
@@ -94,7 +94,7 @@ const aboutPillars: PillarDetail[] = [
     badge: 'Louis Arthur Grimes School of Law',
     summary:
       'Pursuing legal education at the Louis Arthur Grimes School of Law, with interests in legal research, equal justice, and the rule of law.',
-    image: '/gallery/blama-law-library-books.png',
+    image: `${import.meta.env.BASE_URL}gallery/blama-law-library-books.png`,
     detailedText: [
       'Blama is pursuing advanced legal education at the Louis Arthur Grimes School of Law — the premier faculty of law in Liberia at the University of Liberia.',
       'His legal scholarship centers on constitutional governance, commercial law, legal research, and the protection of equal justice under the law.',
@@ -123,7 +123,7 @@ const aboutPillars: PillarDetail[] = [
     badge: 'Lifelong Leadership Development',
     summary:
       'A commitment to professional development that bridges enterprise, governance, and law — preparing for leadership roles that serve Liberia\'s future.',
-    image: '/gallery/blama-portrait-robes.jpg',
+    image: `${import.meta.env.BASE_URL}gallery/blama-portrait-robes.jpg`,
     detailedText: [
       'Blama views leadership and professional development not as static milestones, but as an ongoing continuum of growth, discipline, and community impact.',
       'His journey reflects a deliberate synthesis of enterprise management, public-sector service, and jurisprudence — equipping him to navigate complex socio-economic and policy challenges.',

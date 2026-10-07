@@ -80,7 +80,7 @@ export default function PYPPSection() {
           <div className="reveal group relative overflow-hidden rounded-2xl border border-navy-700/80 bg-navy-800/60 shadow-xl transition-all duration-300 hover:border-gold-500/50">
             <div className="aspect-[16/10] overflow-hidden">
               <img
-                src="/gallery/blama-judiciary-sinoe-county.png"
+                src={`${import.meta.env.BASE_URL}gallery/blama-judiciary-sinoe-county.png`}
                 alt="Blama S. Blama at The Judiciary, 3rd Judicial Circuit Court, Greenville City, Sinoe County"
                 className="h-full w-full object-cover object-[center_20%] transition-transform duration-700 group-hover:scale-105"
               />
@@ -101,7 +101,7 @@ export default function PYPPSection() {
           <div className="reveal group relative overflow-hidden rounded-2xl border border-navy-700/80 bg-navy-800/60 shadow-xl transition-all duration-300 hover:border-gold-500/50" style={{ transitionDelay: '0.1s' }}>
             <div className="aspect-[16/10] overflow-hidden">
               <img
-                src="/gallery/blama-pypp-fieldwork-warehouse.jpg"
+                src={`${import.meta.env.BASE_URL}gallery/blama-pypp-fieldwork-warehouse.jpg`}
                 alt="Blama S. Blama on PYPP field operations and national supply chain coordination"
                 className="h-full w-full object-cover object-[center_35%] transition-transform duration-700 group-hover:scale-105"
               />
