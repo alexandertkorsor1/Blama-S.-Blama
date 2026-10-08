@@ -21,6 +21,7 @@ type Skill = Database['public']['Tables']['skills']['Row'];
 type Article = Database['public']['Tables']['articles']['Row'];
 type Achievement = Database['public']['Tables']['achievements']['Row'];
 type GalleryImage = Database['public']['Tables']['gallery_images']['Row'];
+type HeroImage = Database['public']['Tables']['hero_images']['Row'];
 type TimelineItem = Database['public']['Tables']['timeline_items']['Row'];
 type SiteSettings = Database['public']['Tables']['site_settings']['Row'];
 type PortfolioVideo = Database['public']['Tables']['portfolio_videos']['Row'];
@@ -32,6 +33,7 @@ export type PublicExperience = Experience & {
 };
 
 export type PublicGalleryImage = GalleryImage & { publicUrl: string };
+export type PublicHeroImage = HeroImage & { publicUrl: string };
 export type PublicPortfolioVideo = PortfolioVideo & { publicUrl: string };
 
 type PublicContent = {
@@ -43,6 +45,7 @@ type PublicContent = {
   articles: Article[];
   achievements: Achievement[];
   galleryImages: PublicGalleryImage[];
+  heroImages: PublicHeroImage[];
   portfolioVideos: PublicPortfolioVideo[];
   timelineItems: TimelineItem[];
   settings: SiteSettings | null;
@@ -201,12 +204,20 @@ const initialContent: Omit<PublicContent, 'isLoading' | 'error' | 'refresh'> = {
   articles: defaultArticles,
   achievements: defaultAchievements,
   galleryImages: defaultGalleryImages,
+  heroImages: [],
   portfolioVideos: [],
   timelineItems: defaultTimelineItems,
   settings: null,
 };
 
 const toPublicImage = (image: GalleryImage): PublicGalleryImage => ({
+  ...image,
+  publicUrl: image.storage_path
+    ? supabase.storage.from('portfolio-media').getPublicUrl(image.storage_path).data.publicUrl
+    : image.image_url,
+});
+
+const toPublicHeroImage = (image: HeroImage): PublicHeroImage => ({
   ...image,
   publicUrl: image.storage_path
     ? supabase.storage.from('portfolio-media').getPublicUrl(image.storage_path).data.publicUrl
@@ -241,6 +252,7 @@ export function PublicContentProvider({ children }: { children: React.ReactNode 
         articlesResult,
         achievementsResult,
         galleryResult,
+        heroImagesResult,
         timelineResult,
         settingsResult,
         videosResult,
@@ -256,6 +268,7 @@ export function PublicContentProvider({ children }: { children: React.ReactNode 
         supabase.from('articles').select('*').order('display_order', { ascending: true }).order('published_at', { ascending: false }),
         supabase.from('achievements').select('*').order('display_order', { ascending: true }),
         supabase.from('gallery_images').select('*').order('display_order', { ascending: true }),
+        supabase.from('hero_images').select('*').order('display_order', { ascending: true }),
         supabase.from('timeline_items').select('*').order('display_order', { ascending: true }),
         supabase.from('site_settings').select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
         supabase.from('portfolio_videos').select('*').order('display_order', { ascending: true }),
@@ -281,6 +294,7 @@ export function PublicContentProvider({ children }: { children: React.ReactNode 
       const articlesFromDb = (articlesResult.data && articlesResult.data.length > 0) ? articlesResult.data : defaultArticles;
       const achievementsFromDb = (achievementsResult.data && achievementsResult.data.length > 0) ? achievementsResult.data : defaultAchievements;
       const galleryFromDb = (galleryResult.data && galleryResult.data.length > 0) ? galleryResult.data.map(toPublicImage) : defaultGalleryImages;
+      const heroImagesFromDb = (heroImagesResult.data ?? []).map(toPublicHeroImage);
       const timelineFromDb = (timelineResult.data && timelineResult.data.length > 0) ? timelineResult.data : defaultTimelineItems;
       const videosFromDb = (videosResult.data ?? []).map(toPublicVideo);
 
@@ -293,6 +307,7 @@ export function PublicContentProvider({ children }: { children: React.ReactNode 
         articles: articlesFromDb,
         achievements: achievementsFromDb,
         galleryImages: galleryFromDb,
+        heroImages: heroImagesFromDb,
         timelineItems: timelineFromDb,
         portfolioVideos: videosFromDb,
         settings: settingsResult.data ?? null,
@@ -312,7 +327,7 @@ export function PublicContentProvider({ children }: { children: React.ReactNode 
     const tables = [
       'profiles', 'education', 'experiences', 'experience_responsibilities', 'experience_skills',
       'experience_achievements', 'skill_categories', 'skills', 'articles', 'achievements',
-      'gallery_images', 'timeline_items', 'site_settings', 'portfolio_videos',
+      'gallery_images', 'hero_images', 'timeline_items', 'site_settings', 'portfolio_videos',
     ];
     let channel = supabase.channel('public-portfolio-content');
     tables.forEach((table) => {

@@ -374,6 +374,45 @@ export type Database = {
         }
         Relationships: []
       }
+      hero_images: {
+        Row: {
+          alt: string
+          caption: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          image_url: string
+          published: boolean
+          storage_path: string | null
+          updated_at: string
+        }
+        Insert: {
+          alt: string
+          caption?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          image_url: string
+          published?: boolean
+          storage_path?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alt?: string
+          caption?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string
+          published?: boolean
+          storage_path?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           country: string | null

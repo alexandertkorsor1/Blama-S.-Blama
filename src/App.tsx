@@ -6,6 +6,7 @@ import AdminRouteGuard from '@/components/admin/AdminRouteGuard';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
 import AdminProfilePage from '@/pages/admin/AdminProfilePage';
+import AdminHeroMediaPage from '@/pages/admin/AdminHeroMediaPage';
 import AdminEducationPage from '@/pages/admin/AdminEducationPage';
 import AdminExperiencePage from '@/pages/admin/AdminExperiencePage';
 import AdminAchievementsPage from '@/pages/admin/AdminAchievementsPage';
@@ -36,6 +37,7 @@ function App() {
             <Route element={<AdminLayout />}>
               <Route index element={<AdminDashboardPage />} />
               <Route path="profile" element={<AdminProfilePage />} />
+              <Route path="hero-media" element={<AdminHeroMediaPage />} />
               <Route path="education" element={<AdminEducationPage />} />
               <Route path="experience" element={<AdminExperiencePage />} />
               <Route path="achievements" element={<AdminAchievementsPage />} />

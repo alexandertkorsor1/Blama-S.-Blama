@@ -26,6 +26,7 @@ import {
 const navigationItems = [
   { name: 'Dashboard', path: '/admin', icon: LayoutDashboard, exact: true },
   { name: 'Profile', path: '/admin/profile', icon: UserCheck },
+  { name: 'Hero Media', path: '/admin/hero-media', icon: ImageIcon },
   { name: 'Education', path: '/admin/education', icon: GraduationCap },
   { name: 'Experience', path: '/admin/experience', icon: Briefcase },
   { name: 'Achievements', path: '/admin/achievements', icon: Award },

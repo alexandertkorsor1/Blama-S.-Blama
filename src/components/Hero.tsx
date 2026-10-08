@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowRight, Download, Linkedin, Mail, FileText, MapPin, Scale } from 'lucide-react';
 import { usePublicContent } from '@/context/PublicContentContext';
 
@@ -8,11 +8,29 @@ interface HeroProps {
 
 export default function Hero({ onOpenTextView }: HeroProps) {
   const [imageError, setImageError] = useState(false);
-  const { profile } = usePublicContent();
+  const { profile, heroImages } = usePublicContent();
   const fullName = profile?.full_name ?? 'Blama S. Blama';
   const professionalName = profile?.professional_name ?? 'Saah Blama';
   const title = profile?.title ?? 'Business Management Professional | Law Scholar | Public Administration & PYPP Fellow';
   const location = profile?.location ?? 'Monrovia, Republic of Liberia';
+  const portraitImages = heroImages.length > 0
+    ? heroImages.map((image) => ({ src: image.publicUrl, alt: image.alt, caption: image.caption, description: image.description }))
+    : profile?.profile_image_url
+      ? [{ src: profile.profile_image_url, alt: fullName, caption: null, description: null }]
+      : [];
+  const [activeImage, setActiveImage] = useState(0);
+
+  useEffect(() => {
+    setActiveImage(0);
+  }, [portraitImages.length]);
+
+  useEffect(() => {
+    if (portraitImages.length < 2) return undefined;
+    const timer = window.setInterval(() => {
+      setActiveImage((current) => (current + 1) % portraitImages.length);
+    }, 10000);
+    return () => window.clearInterval(timer);
+  }, [portraitImages.length]);
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
@@ -56,14 +74,15 @@ export default function Hero({ onOpenTextView }: HeroProps) {
             
             {/* Main Portrait Container */}
             <div className="relative h-[430px] w-[310px] overflow-hidden rounded-xl bg-navy-900 shadow-2xl ring-1 ring-gold-500/30 sm:h-[500px] sm:w-[380px]">
-              {profile?.profile_image_url && !imageError ? (
+              {portraitImages.length > 0 && !imageError ? (
                 <div className="relative h-full w-full">
-                  <img
-                    src={profile.profile_image_url}
-                    alt={fullName}
+                  {portraitImages.map((image, index) => <img
+                    key={image.src}
+                    src={image.src}
+                    alt={image.alt}
                     onError={() => setImageError(true)}
-                    className="h-full w-full object-cover object-[center_14%] transition-transform duration-700 ease-out group-hover:scale-[1.02]"
-                  />
+                    className={`absolute inset-0 h-full w-full object-cover object-[center_14%] transition-all duration-1000 ease-out group-hover:scale-[1.02] ${index === activeImage ? 'scale-100 opacity-100' : 'scale-[1.03] opacity-0'}`}
+                  />)}
                   {/* Subtle vignette gradient */}
                   <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/25 to-transparent opacity-95 pointer-events-none" />
                   
@@ -74,11 +93,12 @@ export default function Hero({ onOpenTextView }: HeroProps) {
                       Executive & Legal Scholar
                     </div>
                     <h3 className="mt-2 font-serif text-xl font-bold text-white drop-shadow sm:text-2xl">
-                      {fullName}
+                      {portraitImages[activeImage]?.caption || fullName}
                     </h3>
                     <p className="mt-0.5 text-xs font-medium text-gold-200/90 font-mono">
-                      {professionalName} • PYPP Class XI
+                      {portraitImages[activeImage]?.description || `${professionalName} • PYPP Class XI`}
                     </p>
+                    {portraitImages.length > 1 && <div className="mt-3 flex gap-1.5" aria-label="Hero image sequence">{portraitImages.map((image, index) => <button key={image.src} type="button" onClick={() => setActiveImage(index)} aria-label={`Show image ${index + 1}`} className={`h-1.5 rounded-full transition-all ${index === activeImage ? 'w-6 bg-gold-400' : 'w-1.5 bg-white/50 hover:bg-white'}`} />)}</div>}
                   </div>
                 </div>
               ) : (
