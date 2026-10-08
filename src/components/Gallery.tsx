@@ -77,7 +77,7 @@ export default function Gallery() {
 
   return (
     <section id="gallery" className="section-padding py-20 lg:py-28 bg-parchment-100/50">
-      <div className="mx-auto max-w-7xl">
+      <div className="site-container">
         <div className="reveal">
           <SectionHeading
             eyebrow="Media & Field Documentation"

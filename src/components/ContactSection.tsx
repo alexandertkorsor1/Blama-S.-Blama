@@ -88,7 +88,7 @@ export default function ContactSection() {
 
   return (
     <section id="contact" className="section-padding py-20 lg:py-28 bg-cream-200">
-      <div className="mx-auto max-w-6xl">
+      <div className="site-container">
         <div className="reveal">
           <SectionHeading
             eyebrow="Contact"

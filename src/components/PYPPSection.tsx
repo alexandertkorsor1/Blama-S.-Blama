@@ -24,7 +24,7 @@ export default function PYPPSection() {
         }}
       />
 
-      <div className="relative z-10 mx-auto max-w-7xl">
+      <div className="relative z-10 site-container">
         <div className="reveal text-center">
           <div className="flex items-center justify-center gap-3">
             <span className="h-px w-8 bg-gold-400" />

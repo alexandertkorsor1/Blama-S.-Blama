@@ -263,9 +263,8 @@ export default function AdminLeadershipPage() {
 
                   <ImageSelectorUploader
                     label={`Select Image for Showcase Card 0${i + 1}`}
-                    currentUrl={card.imageUrl}
-                    onSelectImage={(url) => updateShowcase(i, 'imageUrl', url)}
-                    aspectRatio="16/10"
+                    value={card.imageUrl}
+                    onChange={(url: string) => updateShowcase(i, 'imageUrl', url)}
                   />
 
                   <div>

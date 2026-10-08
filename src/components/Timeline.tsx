@@ -15,7 +15,7 @@ export default function Timeline() {
   const { timelineItems } = usePublicContent();
   return (
     <section id="journey" className="bg-parchment-50 section-padding py-20 lg:py-28 border-t border-parchment-200">
-      <div className="mx-auto max-w-5xl">
+      <div className="site-container">
         <div className="reveal">
           <SectionHeading
             eyebrow="Milestone Trajectory"

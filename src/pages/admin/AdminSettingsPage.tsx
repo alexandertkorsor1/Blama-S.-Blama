@@ -137,7 +137,6 @@ export default function AdminSettingsPage() {
       const mockSettings: SiteSettings = {
         id: 'local-settings',
         ...values,
-        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
       localStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify(mockSettings));

@@ -18,6 +18,7 @@ const navLinks = [
   { id: 'achievements', label: 'Achievements' },
   { id: 'certificates', label: 'Certificates & Vault' },
   { id: 'gallery', label: 'Media' },
+  { id: 'videos', label: 'Videos' },
   { id: 'contact', label: 'Contact' },
 ];
 
@@ -62,7 +63,7 @@ export default function Navbar({ isTextView = false, onToggleTextView }: NavbarP
           : 'bg-white/95 backdrop-blur-md shadow-xs border-b border-parchment-200 py-3.5'
       }`}
     >
-      <nav className="mx-auto flex max-w-8xl items-center justify-between px-5 sm:px-8 lg:px-12">
+      <nav className="site-container flex items-center justify-between px-5 sm:px-8 lg:px-12">
         <button
           onClick={() => handleNavClick('home')}
           className="group flex items-center gap-2.5 text-left focus:outline-none"

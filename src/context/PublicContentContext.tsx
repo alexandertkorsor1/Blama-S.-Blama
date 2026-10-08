@@ -23,6 +23,7 @@ type Achievement = Database['public']['Tables']['achievements']['Row'];
 type GalleryImage = Database['public']['Tables']['gallery_images']['Row'];
 type TimelineItem = Database['public']['Tables']['timeline_items']['Row'];
 type SiteSettings = Database['public']['Tables']['site_settings']['Row'];
+type PortfolioVideo = Database['public']['Tables']['portfolio_videos']['Row'];
 
 export type PublicExperience = Experience & {
   responsibilities: ExperienceResponsibility[];
@@ -31,6 +32,7 @@ export type PublicExperience = Experience & {
 };
 
 export type PublicGalleryImage = GalleryImage & { publicUrl: string };
+export type PublicPortfolioVideo = PortfolioVideo & { publicUrl: string };
 
 type PublicContent = {
   profile: Profile | null;
@@ -41,6 +43,7 @@ type PublicContent = {
   articles: Article[];
   achievements: Achievement[];
   galleryImages: PublicGalleryImage[];
+  portfolioVideos: PublicPortfolioVideo[];
   timelineItems: TimelineItem[];
   settings: SiteSettings | null;
   isLoading: boolean;
@@ -198,6 +201,7 @@ const initialContent: Omit<PublicContent, 'isLoading' | 'error' | 'refresh'> = {
   articles: defaultArticles,
   achievements: defaultAchievements,
   galleryImages: defaultGalleryImages,
+  portfolioVideos: [],
   timelineItems: defaultTimelineItems,
   settings: null,
 };
@@ -207,6 +211,13 @@ const toPublicImage = (image: GalleryImage): PublicGalleryImage => ({
   publicUrl: image.storage_path
     ? supabase.storage.from('portfolio-media').getPublicUrl(image.storage_path).data.publicUrl
     : image.image_url,
+});
+
+const toPublicVideo = (video: PortfolioVideo): PublicPortfolioVideo => ({
+  ...video,
+  publicUrl: video.storage_path
+    ? supabase.storage.from('portfolio-media').getPublicUrl(video.storage_path).data.publicUrl
+    : video.video_url,
 });
 
 const PublicContentContext = createContext<PublicContent | undefined>(undefined);
@@ -232,6 +243,7 @@ export function PublicContentProvider({ children }: { children: React.ReactNode 
         galleryResult,
         timelineResult,
         settingsResult,
+        videosResult,
       ] = await Promise.all([
         supabase.from('profiles').select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
         supabase.from('education').select('*').order('display_order', { ascending: true }),
@@ -246,6 +258,7 @@ export function PublicContentProvider({ children }: { children: React.ReactNode 
         supabase.from('gallery_images').select('*').order('display_order', { ascending: true }),
         supabase.from('timeline_items').select('*').order('display_order', { ascending: true }),
         supabase.from('site_settings').select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
+        supabase.from('portfolio_videos').select('*').order('display_order', { ascending: true }),
       ]);
 
       const responsibilities = responsibilitiesResult.data ?? [];
@@ -269,6 +282,7 @@ export function PublicContentProvider({ children }: { children: React.ReactNode 
       const achievementsFromDb = (achievementsResult.data && achievementsResult.data.length > 0) ? achievementsResult.data : defaultAchievements;
       const galleryFromDb = (galleryResult.data && galleryResult.data.length > 0) ? galleryResult.data.map(toPublicImage) : defaultGalleryImages;
       const timelineFromDb = (timelineResult.data && timelineResult.data.length > 0) ? timelineResult.data : defaultTimelineItems;
+      const videosFromDb = (videosResult.data ?? []).map(toPublicVideo);
 
       setContent({
         profile: profileFromDb,
@@ -280,6 +294,7 @@ export function PublicContentProvider({ children }: { children: React.ReactNode 
         achievements: achievementsFromDb,
         galleryImages: galleryFromDb,
         timelineItems: timelineFromDb,
+        portfolioVideos: videosFromDb,
         settings: settingsResult.data ?? null,
       });
       setError(false);
@@ -297,7 +312,7 @@ export function PublicContentProvider({ children }: { children: React.ReactNode 
     const tables = [
       'profiles', 'education', 'experiences', 'experience_responsibilities', 'experience_skills',
       'experience_achievements', 'skill_categories', 'skills', 'articles', 'achievements',
-      'gallery_images', 'timeline_items', 'site_settings',
+      'gallery_images', 'timeline_items', 'site_settings', 'portfolio_videos',
     ];
     let channel = supabase.channel('public-portfolio-content');
     tables.forEach((table) => {

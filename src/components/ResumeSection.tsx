@@ -8,7 +8,7 @@ interface ResumeSectionProps {
 export default function ResumeSection({ onOpenSectionInDossier }: ResumeSectionProps) {
   return (
     <section id="resume" className="section-padding py-20 lg:py-28 bg-parchment-100/70">
-      <div className="mx-auto max-w-7xl">
+      <div className="site-container">
         <div className="reveal">
           <SectionHeading
             eyebrow="Official Documentation"

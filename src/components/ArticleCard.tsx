@@ -157,7 +157,7 @@ export default function ArticleCardList({ onOpenTextView }: ArticleCardListProps
 
   return (
     <section id="insights" className="section-padding py-20 lg:py-28 bg-parchment-100/60">
-      <div className="mx-auto max-w-7xl">
+      <div className="site-container">
         <div className="reveal">
           <SectionHeading
             eyebrow={sections.articles.eyebrow}

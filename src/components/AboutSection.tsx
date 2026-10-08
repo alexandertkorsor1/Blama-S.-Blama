@@ -197,7 +197,7 @@ export default function AboutSection({ onOpenTextView }: AboutSectionProps) {
 
   return (
     <section id="about" className="section-padding py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl">
+      <div className="site-container">
         <div className="reveal">
           <SectionHeading
             eyebrow="About"

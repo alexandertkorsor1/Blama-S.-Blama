@@ -22,7 +22,7 @@ export default function AchievementCard() {
 
   return (
     <section id="achievements" className="section-padding py-20 lg:py-28 bg-parchment-100/40">
-      <div className="mx-auto max-w-5xl">
+      <div className="site-container">
         <div className="reveal">
           <SectionHeading
             eyebrow={sections.achievements.eyebrow}

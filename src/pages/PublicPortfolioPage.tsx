@@ -12,6 +12,7 @@ import ArticleCardList from '@/components/ArticleCard';
 import AchievementCard from '@/components/AchievementCard';
 import CertificateVault from '@/components/CertificateVault';
 import Gallery from '@/components/Gallery';
+import VideoShowcase from '@/components/VideoShowcase';
 import ResumeSection from '@/components/ResumeSection';
 import ContactSection from '@/components/ContactSection';
 import Footer from '@/components/Footer';
@@ -100,6 +101,7 @@ function PublicPortfolioContent() {
         <AchievementCard />
         <CertificateVault onOpenTextView={() => openTextView('education')} />
         <Gallery />
+        <VideoShowcase />
         <ResumeSection onOpenSectionInDossier={(sec) => openTextView(sec)} />
         <ContactSection />
       </main>

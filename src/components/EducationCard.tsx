@@ -17,7 +17,7 @@ export default function EducationCard({ onOpenTextView }: EducationCardProps) {
 
   return (
     <section id="education" className="section-padding py-20 lg:py-28 bg-parchment-50">
-      <div className="mx-auto max-w-7xl">
+      <div className="site-container">
         <div className="reveal">
           <SectionHeading
             eyebrow={sections.education.eyebrow}

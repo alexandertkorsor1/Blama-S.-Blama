@@ -422,6 +422,45 @@ export type Database = {
         }
         Relationships: []
       }
+      portfolio_videos: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          poster_url: string | null
+          published: boolean
+          storage_path: string | null
+          title: string
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          poster_url?: string | null
+          published?: boolean
+          storage_path?: string | null
+          title: string
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          poster_url?: string | null
+          published?: boolean
+          storage_path?: string | null
+          title?: string
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           contact_form_enabled: boolean

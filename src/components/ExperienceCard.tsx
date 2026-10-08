@@ -13,7 +13,7 @@ export default function ExperienceCard({ onOpenTextView }: ExperienceCardProps) 
 
   return (
     <section id="experience" className="section-padding py-20 lg:py-28 bg-white">
-      <div className="mx-auto max-w-7xl">
+      <div className="site-container">
         <div className="reveal">
           <SectionHeading
             eyebrow={sections.experience.eyebrow}

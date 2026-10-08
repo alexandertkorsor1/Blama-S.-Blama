@@ -28,7 +28,7 @@ export default function Footer({ onOpenTextView }: FooterProps) {
 
   return (
     <footer className="bg-navy-950 text-slate-100 border-t border-navy-800">
-      <div className="mx-auto max-w-8xl px-5 py-16 sm:px-8 lg:px-12">
+      <div className="site-container px-5 py-16 sm:px-8 lg:px-12">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
           <div>
             <div className="flex items-center gap-2.5">

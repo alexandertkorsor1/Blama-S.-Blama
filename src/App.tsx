@@ -12,6 +12,7 @@ import AdminAchievementsPage from '@/pages/admin/AdminAchievementsPage';
 import AdminSkillsPage from '@/pages/admin/AdminSkillsPage';
 import AdminArticlesPage from '@/pages/admin/AdminArticlesPage';
 import AdminGalleryPage from '@/pages/admin/AdminGalleryPage';
+import AdminVideosPage from '@/pages/admin/AdminVideosPage';
 import AdminTimelinePage from '@/pages/admin/AdminTimelinePage';
 import AdminCertificatesPage from '@/pages/admin/AdminCertificatesPage';
 import AdminDocumentsPage from '@/pages/admin/AdminDocumentsPage';
@@ -44,6 +45,7 @@ function App() {
               <Route path="certificates" element={<AdminCertificatesPage />} />
               <Route path="documents" element={<AdminDocumentsPage />} />
               <Route path="gallery" element={<AdminGalleryPage />} />
+              <Route path="videos" element={<AdminVideosPage />} />
               <Route path="timeline" element={<AdminTimelinePage />} />
               <Route path="messages" element={<AdminMessagesPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />

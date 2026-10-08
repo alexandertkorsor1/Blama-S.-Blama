@@ -22,7 +22,7 @@ export default function SkillGroup() {
 
   return (
     <section id="skills" className="section-padding py-20 lg:py-28 bg-parchment-50 border-t border-parchment-200">
-      <div className="mx-auto max-w-7xl">
+      <div className="site-container">
         <div className="reveal">
           <SectionHeading
             eyebrow={sections.skills.eyebrow}

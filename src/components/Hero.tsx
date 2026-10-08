@@ -46,7 +46,7 @@ export default function Hero({ onOpenTextView }: HeroProps) {
         }}
       />
 
-      <div className="relative z-10 mx-auto grid w-full max-w-8xl grid-cols-1 gap-12 px-5 pt-32 pb-24 sm:px-8 lg:grid-cols-12 lg:items-center lg:gap-16 lg:px-12 lg:pt-32">
+      <div className="relative z-10 site-container grid grid-cols-1 gap-12 px-5 pb-24 pt-32 sm:px-8 lg:grid-cols-12 lg:items-center lg:gap-16 lg:px-12 lg:pt-32">
         {/* Left Column: Portrait Photo with Architectural Matting */}
         <div className="reveal flex justify-center lg:col-span-5 lg:justify-start order-2 lg:order-1" style={{ transitionDelay: '0.1s' }}>
           <div className="relative group">
